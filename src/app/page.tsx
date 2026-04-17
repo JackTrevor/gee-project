@@ -1,48 +1,54 @@
 import Link from "next/link";
 
 import { LogoutButton } from "@/components/logout-button";
+import { getDashboardData } from "@/lib/dashboard";
+import { formatCurrency, formatDate } from "@/lib/format";
+import { connectToDatabase } from "@/lib/mongodb";
 
-const metrics = [
-  { label: "Monthly Revenue", value: "$8,640", note: "32 jobs billed this month" },
-  { label: "Cleaner Payouts", value: "$5,970", note: "9 active cleaners" },
-  { label: "Net Profit", value: "$2,670", note: "31% margin across active work" },
-  { label: "Open Invoices", value: "$1,420", note: "6 invoices still unpaid" },
-];
+const statusClassNames: Record<string, string> = {
+  scheduled: "bg-[rgba(54,94,129,0.10)] text-[#375d81]",
+  completed: "bg-[rgba(34,94,67,0.10)] text-[#215940]",
+  cancelled: "bg-[rgba(137,48,48,0.10)] text-[#8a2f2f]",
+  pending: "bg-[rgba(201,111,59,0.12)] text-accent-strong",
+  invoiced: "bg-[rgba(90,52,110,0.08)] text-[#5a346e]",
+  paid: "bg-[rgba(34,94,67,0.10)] text-[#215940]",
+};
 
-const recentJobs = [
-  {
-    apartment: "Palm Breeze 12B",
-    client: "Sunset Stays",
-    cleaner: "Maria",
-    charged: "$180",
-    payout: "$120",
-    status: "Ready to invoice",
-  },
-  {
-    apartment: "Harbor Loft 4A",
-    client: "Coastal Homes",
-    cleaner: "Andressa",
-    charged: "$125",
-    payout: "$85",
-    status: "Paid",
-  },
-  {
-    apartment: "Ocean View 9C",
-    client: "BlueKey Rentals",
-    cleaner: "Paula",
-    charged: "$210",
-    payout: "$150",
-    status: "Cleaning scheduled",
-  },
-];
+function Pill({ value }: { value: string }) {
+  return (
+    <span
+      className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold capitalize ${
+        statusClassNames[value] ?? "bg-[rgba(67,56,51,0.08)] text-ink-soft"
+      }`}
+    >
+      {value}
+    </span>
+  );
+}
 
-const priorities = [
-  "Create the MongoDB connection and first collections",
-  "Build Jobs, Clients, and Cleaners CRUD screens",
-  "Add invoice generation and printable client billing",
-];
+export default async function Home() {
+  await connectToDatabase();
+  const { clients, cleaners, jobs, totals } = await getDashboardData();
 
-export default function Home() {
+  const activeCleaners = cleaners.filter((cleaner) => cleaner.active).length;
+  const recentJobs = jobs.slice(0, 5);
+  const topClients = [...jobs]
+    .reduce<Map<string, { name: string; revenue: number; jobs: number }>>((map, job) => {
+      const key = job.clientId?._id ?? "unknown";
+      const name = job.clientId?.companyName || job.clientId?.name || "Unknown client";
+      const current = map.get(key) ?? { name, revenue: 0, jobs: 0 };
+
+      current.revenue += job.amountCharged;
+      current.jobs += 1;
+      map.set(key, current);
+
+      return map;
+    }, new Map())
+    .values()
+    .toArray()
+    .sort((left, right) => right.revenue - left.revenue)
+    .slice(0, 4);
+
   return (
     <main className="min-h-screen px-4 py-6 text-foreground sm:px-6 lg:px-10">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
@@ -51,7 +57,7 @@ export default function Home() {
             <div className="space-y-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="inline-flex items-center rounded-full border border-[rgba(94,82,64,0.18)] bg-[rgba(255,255,255,0.55)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-accent-strong">
-                  Gee Project v1
+                  Gee Project dashboard
                 </div>
                 <LogoutButton />
               </div>
@@ -60,9 +66,9 @@ export default function Home() {
                   A cleaner, calmer way to run apartment cleaning jobs.
                 </p>
                 <p className="max-w-2xl text-base leading-7 text-muted sm:text-lg">
-                  Track every apartment, see who cleaned it, measure profit per
-                  job, and stay on top of invoicing without juggling notes and
-                  spreadsheets.
+                  The dashboard now reflects your real MongoDB data. As you add
+                  clients, cleaners, and apartment jobs, these totals and lists
+                  update with the business activity you are actually tracking.
                 </p>
               </div>
               <div className="flex flex-wrap gap-3 text-sm">
@@ -70,35 +76,22 @@ export default function Home() {
                   href="/jobs"
                   className="rounded-full bg-[rgba(201,111,59,0.12)] px-4 py-2 text-accent-strong transition hover:bg-[rgba(201,111,59,0.18)]"
                 >
-                  Jobs
-                </Link>
-                <Link
-                  href="/jobs"
-                  className="rounded-full bg-[rgba(54,94,129,0.10)] px-4 py-2 text-[#375d81] transition hover:bg-[rgba(54,94,129,0.16)]"
-                >
-                  Cleaners
-                </Link>
-                <Link
-                  href="/jobs"
-                  className="rounded-full bg-[rgba(34,94,67,0.10)] px-4 py-2 text-[#215940] transition hover:bg-[rgba(34,94,67,0.16)]"
-                >
-                  Clients
-                </Link>
-                <Link
-                  href="/jobs"
-                  className="rounded-full bg-[rgba(90,52,110,0.08)] px-4 py-2 text-[#5a346e] transition hover:bg-[rgba(90,52,110,0.14)]"
-                >
-                  Invoices
+                  Open jobs workspace
                 </Link>
               </div>
             </div>
 
             <div className="rounded-[28px] border border-[rgba(94,82,64,0.14)] bg-surface-strong p-5">
               <p className="text-sm font-semibold uppercase tracking-[0.2em] text-muted">
-                What v1 includes
+                Business snapshot
               </p>
               <div className="mt-4 space-y-3">
-                {priorities.map((item) => (
+                {[
+                  `${clients.length} clients on file`,
+                  `${activeCleaners} active cleaners available`,
+                  `${jobs.length} total jobs recorded`,
+                  `${formatCurrency(totals.outstandingCleanerBalance)} still owed to cleaners`,
+                ].map((item) => (
                   <div
                     key={item}
                     className="rounded-2xl border border-border bg-white/70 px-4 py-3 text-sm leading-6 text-ink-soft"
@@ -107,18 +100,36 @@ export default function Home() {
                   </div>
                 ))}
               </div>
-              <Link
-                href="/jobs"
-                className="mt-5 inline-flex rounded-full bg-accent px-5 py-3 text-sm font-semibold text-white transition hover:bg-accent-strong"
-              >
-                Open jobs workspace
-              </Link>
             </div>
           </div>
         </section>
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {metrics.map((metric) => (
+          {[
+            {
+              label: "Revenue",
+              value: formatCurrency(totals.revenue),
+              note: `${jobs.length} jobs created so far`,
+            },
+            {
+              label: "Cleaner Payouts",
+              value: formatCurrency(totals.payouts),
+              note: `${formatCurrency(totals.outstandingCleanerBalance)} still unpaid`,
+            },
+            {
+              label: "Net Profit",
+              value: formatCurrency(totals.profit),
+              note:
+                totals.revenue > 0
+                  ? `${Math.round((totals.profit / totals.revenue) * 100)}% gross margin`
+                  : "No revenue yet",
+            },
+            {
+              label: "Outstanding Client Balance",
+              value: formatCurrency(totals.outstandingClientBalance),
+              note: "Open receivables from clients",
+            },
+          ].map((metric) => (
             <article
               key={metric.label}
               className="card-shadow rounded-[28px] border border-border bg-surface p-5 backdrop-blur"
@@ -142,79 +153,111 @@ export default function Home() {
                   Recent jobs
                 </p>
                 <h2 className="mt-2 font-serif text-3xl text-ink-soft">
-                  Snapshot of the work queue
+                  Live queue from MongoDB
                 </h2>
               </div>
               <div className="rounded-full bg-[rgba(201,111,59,0.12)] px-3 py-1 text-sm text-accent-strong">
-                Demo data
+                {jobs.length} total
               </div>
             </div>
 
-            <div className="mt-6 overflow-hidden rounded-[24px] border border-border">
-              <div className="hidden grid-cols-[1.35fr_1fr_1fr_0.8fr_0.8fr_1fr] gap-4 bg-[rgba(67,56,51,0.04)] px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-muted md:grid">
-                <span>Apartment</span>
-                <span>Client</span>
-                <span>Cleaner</span>
-                <span>Charged</span>
-                <span>Payout</span>
-                <span>Status</span>
+            {recentJobs.length === 0 ? (
+              <div className="mt-6 rounded-[24px] border border-dashed border-border bg-white/50 px-5 py-8 text-sm leading-7 text-muted">
+                No jobs yet. Open the jobs workspace and add your first client,
+                cleaner, and apartment job.
               </div>
-
-              {recentJobs.map((job) => (
-                <div
-                  key={job.apartment}
-                  className="grid gap-3 border-t border-border px-4 py-4 text-sm first:border-t-0 md:grid-cols-[1.35fr_1fr_1fr_0.8fr_0.8fr_1fr] md:items-center md:gap-4"
-                >
-                  <div>
-                    <p className="font-semibold text-ink-soft">{job.apartment}</p>
-                    <p className="text-xs uppercase tracking-[0.18em] text-muted md:hidden">
-                      Apartment
-                    </p>
-                  </div>
-                  <div>{job.client}</div>
-                  <div>{job.cleaner}</div>
-                  <div>{job.charged}</div>
-                  <div>{job.payout}</div>
-                  <div>
-                    <span className="inline-flex rounded-full bg-[rgba(54,94,129,0.10)] px-3 py-1 text-xs font-semibold text-[#375d81]">
-                      {job.status}
-                    </span>
-                  </div>
+            ) : (
+              <div className="mt-6 overflow-hidden rounded-[24px] border border-border">
+                <div className="hidden grid-cols-[1.35fr_1fr_1fr_0.8fr_0.8fr_1fr] gap-4 bg-[rgba(67,56,51,0.04)] px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-muted md:grid">
+                  <span>Apartment</span>
+                  <span>Client</span>
+                  <span>Cleaner</span>
+                  <span>Charged</span>
+                  <span>Date</span>
+                  <span>Status</span>
                 </div>
-              ))}
-            </div>
+
+                {recentJobs.map((job) => (
+                  <div
+                    key={job._id}
+                    className="grid gap-3 border-t border-border px-4 py-4 text-sm first:border-t-0 md:grid-cols-[1.35fr_1fr_1fr_0.8fr_0.8fr_1fr] md:items-center md:gap-4"
+                  >
+                    <div>
+                      <p className="font-semibold text-ink-soft">{job.apartmentName}</p>
+                      <p className="text-xs text-muted">{job.apartmentAddress || "No address yet"}</p>
+                    </div>
+                    <div>{job.clientId?.companyName || job.clientId?.name || "Unknown client"}</div>
+                    <div>{job.cleanerId?.name || "Unknown cleaner"}</div>
+                    <div>{formatCurrency(job.amountCharged)}</div>
+                    <div>{formatDate(job.cleaningDate)}</div>
+                    <div>
+                      <Pill value={job.jobStatus} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </article>
 
-          <article className="card-shadow rounded-[32px] border border-border bg-[linear-gradient(180deg,rgba(255,250,244,0.96),rgba(247,241,232,0.92))] p-6">
-            <p className="text-sm uppercase tracking-[0.18em] text-muted">
-              Data foundation
-            </p>
-            <h2 className="mt-2 font-serif text-3xl text-ink-soft">
-              MongoDB-ready from day one
-            </h2>
-            <p className="mt-4 text-sm leading-7 text-muted">
-              The project now includes starter models for clients, cleaners,
-              jobs, and invoices, plus a reusable MongoDB connection helper for
-              the next CRUD step.
-            </p>
+          <div className="grid gap-6">
+            <article className="card-shadow rounded-[32px] border border-border bg-[linear-gradient(180deg,rgba(255,250,244,0.96),rgba(247,241,232,0.92))] p-6">
+              <p className="text-sm uppercase tracking-[0.18em] text-muted">
+                Top clients
+              </p>
+              <h2 className="mt-2 font-serif text-3xl text-ink-soft">
+                Who brings the most work?
+              </h2>
 
-            <div className="mt-6 space-y-3">
-              {[
-                "Client records with contact details",
-                "Cleaner profiles and payment totals",
-                "Job records with revenue and payout fields",
-                "Invoices linked back to one or more jobs",
-                "QuickBooks-ready external IDs for future sync",
-              ].map((item) => (
-                <div
-                  key={item}
-                  className="rounded-2xl border border-border bg-white/70 px-4 py-3 text-sm text-ink-soft"
-                >
-                  {item}
+              {topClients.length === 0 ? (
+                <div className="mt-6 rounded-[24px] border border-dashed border-border bg-white/60 px-5 py-6 text-sm leading-7 text-muted">
+                  Client rankings will appear once you start recording jobs.
                 </div>
-              ))}
-            </div>
-          </article>
+              ) : (
+                <div className="mt-6 space-y-3">
+                  {topClients.map((client) => (
+                    <div
+                      key={client.name}
+                      className="rounded-2xl border border-border bg-white/70 px-4 py-4"
+                    >
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <p className="font-semibold text-ink-soft">{client.name}</p>
+                          <p className="text-sm text-muted">{client.jobs} jobs recorded</p>
+                        </div>
+                        <p className="font-semibold text-ink-soft">
+                          {formatCurrency(client.revenue)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </article>
+
+            <article className="card-shadow rounded-[32px] border border-border bg-surface p-6 backdrop-blur">
+              <p className="text-sm uppercase tracking-[0.18em] text-muted">
+                Next build
+              </p>
+              <h2 className="mt-2 font-serif text-3xl text-ink-soft">
+                Good next features
+              </h2>
+              <div className="mt-6 space-y-3">
+                {[
+                  "Edit and delete clients, cleaners, and jobs",
+                  "Create invoices from completed jobs",
+                  "Monthly charts and cleaner performance reporting",
+                  "QuickBooks customer, vendor, and invoice sync later",
+                ].map((item) => (
+                  <div
+                    key={item}
+                    className="rounded-2xl border border-border bg-white/70 px-4 py-3 text-sm text-ink-soft"
+                  >
+                    {item}
+                  </div>
+                ))}
+              </div>
+            </article>
+          </div>
         </section>
       </div>
     </main>
