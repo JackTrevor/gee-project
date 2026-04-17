@@ -86,6 +86,12 @@ export default async function Home() {
                   Open payments
                 </Link>
                 <Link
+                  href="/invoices"
+                  className="rounded-full border border-border bg-white/70 px-4 py-2 text-ink-soft transition hover:bg-white"
+                >
+                  Open invoices
+                </Link>
+                <Link
                   href="/users"
                   className="rounded-full border border-border bg-white/70 px-4 py-2 text-ink-soft transition hover:bg-white"
                 >

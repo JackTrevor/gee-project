@@ -10,6 +10,7 @@ import { hashPassword } from "@/lib/passwords";
 import { CleanerPayment } from "@/models/CleanerPayment";
 import { Cleaner } from "@/models/Cleaner";
 import { Client } from "@/models/Client";
+import { Invoice } from "@/models/Invoice";
 import { Job } from "@/models/Job";
 import { User } from "@/models/User";
 
@@ -61,6 +62,7 @@ async function assertAdmin() {
 
 function revalidateAppPaths() {
   revalidatePath("/");
+  revalidatePath("/invoices");
   revalidatePath("/jobs");
   revalidatePath("/payments");
   revalidatePath("/users");
@@ -352,4 +354,58 @@ export async function createUserAccount(formData: FormData) {
   });
 
   revalidateAppPaths();
+}
+
+export async function createInvoice(formData: FormData) {
+  await assertAuthenticated();
+  await connectToDatabase();
+
+  const clientId = cleanText(formData.get("clientId"));
+  const issueDate = cleanText(formData.get("issueDate"));
+  const dueDate = cleanText(formData.get("dueDate"));
+  const invoiceNumber = cleanText(formData.get("invoiceNumber"));
+  const selectedJobIds = formData
+    .getAll("jobIds")
+    .map((value) => cleanText(value))
+    .filter(Boolean);
+
+  if (!clientId || !issueDate || !dueDate || !invoiceNumber || selectedJobIds.length === 0) {
+    throw new Error("Client, invoice dates, invoice number, and at least one job are required.");
+  }
+
+  const jobs = await Job.find({
+    _id: { $in: selectedJobIds },
+    clientId,
+    clientPaymentStatus: "pending",
+  }).lean();
+
+  if (jobs.length !== selectedJobIds.length) {
+    throw new Error("Some selected jobs are no longer available for invoicing.");
+  }
+
+  const totalAmount = jobs.reduce((sum, job) => sum + job.amountCharged, 0);
+
+  const invoice = await Invoice.create({
+    invoiceNumber,
+    clientId,
+    jobIds: selectedJobIds,
+    totalAmount,
+    issueDate: new Date(issueDate),
+    dueDate: new Date(dueDate),
+    notes: cleanOptionalText(formData.get("notes")),
+    status: "sent",
+  });
+
+  await Job.updateMany(
+    { _id: { $in: selectedJobIds } },
+    {
+      $set: {
+        clientPaymentStatus: "invoiced",
+        clientInvoiceId: invoice._id,
+      },
+    },
+  );
+
+  revalidateAppPaths();
+  redirect(`/invoices/${invoice._id.toString()}`);
 }

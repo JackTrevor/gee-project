@@ -19,6 +19,7 @@ const jobSchema = new Schema(
       enum: ["pending", "invoiced", "paid"],
       default: "pending",
     },
+    clientInvoiceId: { type: Schema.Types.ObjectId, ref: "Invoice" },
     cleanerPaymentStatus: {
       type: String,
       enum: ["pending", "paid"],
