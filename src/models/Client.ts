@@ -5,6 +5,7 @@ export type ClientDocument = {
   companyName?: string;
   phone?: string;
   email?: string;
+  quickbooksCustomerId?: string;
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -16,6 +17,7 @@ const clientSchema = new Schema<ClientDocument>(
     companyName: { type: String, trim: true },
     phone: { type: String, trim: true },
     email: { type: String, trim: true, lowercase: true },
+    quickbooksCustomerId: { type: String, trim: true },
     notes: { type: String, trim: true },
   },
   { timestamps: true },

@@ -8,6 +8,7 @@ const invoiceSchema = new Schema(
     totalAmount: { type: Number, required: true, min: 0 },
     issueDate: { type: Date, required: true },
     dueDate: { type: Date, required: true },
+    quickbooksInvoiceId: { type: String, trim: true },
     status: {
       type: String,
       enum: ["draft", "sent", "paid", "overdue"],

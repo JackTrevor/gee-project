@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 const metrics = [
   { label: "Monthly Revenue", value: "$8,640", note: "32 jobs billed this month" },
   { label: "Cleaner Payouts", value: "$5,970", note: "9 active cleaners" },
@@ -59,18 +61,30 @@ export default function Home() {
                 </p>
               </div>
               <div className="flex flex-wrap gap-3 text-sm">
-                <div className="rounded-full bg-[rgba(201,111,59,0.12)] px-4 py-2 text-accent-strong">
+                <Link
+                  href="/jobs"
+                  className="rounded-full bg-[rgba(201,111,59,0.12)] px-4 py-2 text-accent-strong transition hover:bg-[rgba(201,111,59,0.18)]"
+                >
                   Jobs
-                </div>
-                <div className="rounded-full bg-[rgba(54,94,129,0.10)] px-4 py-2 text-[#375d81]">
+                </Link>
+                <Link
+                  href="/jobs"
+                  className="rounded-full bg-[rgba(54,94,129,0.10)] px-4 py-2 text-[#375d81] transition hover:bg-[rgba(54,94,129,0.16)]"
+                >
                   Cleaners
-                </div>
-                <div className="rounded-full bg-[rgba(34,94,67,0.10)] px-4 py-2 text-[#215940]">
+                </Link>
+                <Link
+                  href="/jobs"
+                  className="rounded-full bg-[rgba(34,94,67,0.10)] px-4 py-2 text-[#215940] transition hover:bg-[rgba(34,94,67,0.16)]"
+                >
                   Clients
-                </div>
-                <div className="rounded-full bg-[rgba(90,52,110,0.08)] px-4 py-2 text-[#5a346e]">
+                </Link>
+                <Link
+                  href="/jobs"
+                  className="rounded-full bg-[rgba(90,52,110,0.08)] px-4 py-2 text-[#5a346e] transition hover:bg-[rgba(90,52,110,0.14)]"
+                >
                   Invoices
-                </div>
+                </Link>
               </div>
             </div>
 
@@ -88,6 +102,12 @@ export default function Home() {
                   </div>
                 ))}
               </div>
+              <Link
+                href="/jobs"
+                className="mt-5 inline-flex rounded-full bg-accent px-5 py-3 text-sm font-semibold text-white transition hover:bg-accent-strong"
+              >
+                Open jobs workspace
+              </Link>
             </div>
           </div>
         </section>
@@ -179,6 +199,7 @@ export default function Home() {
                 "Cleaner profiles and payment totals",
                 "Job records with revenue and payout fields",
                 "Invoices linked back to one or more jobs",
+                "QuickBooks-ready external IDs for future sync",
               ].map((item) => (
                 <div
                   key={item}
