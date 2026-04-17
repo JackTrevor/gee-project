@@ -1,65 +1,196 @@
-import Image from "next/image";
+const metrics = [
+  { label: "Monthly Revenue", value: "$8,640", note: "32 jobs billed this month" },
+  { label: "Cleaner Payouts", value: "$5,970", note: "9 active cleaners" },
+  { label: "Net Profit", value: "$2,670", note: "31% margin across active work" },
+  { label: "Open Invoices", value: "$1,420", note: "6 invoices still unpaid" },
+];
+
+const recentJobs = [
+  {
+    apartment: "Palm Breeze 12B",
+    client: "Sunset Stays",
+    cleaner: "Maria",
+    charged: "$180",
+    payout: "$120",
+    status: "Ready to invoice",
+  },
+  {
+    apartment: "Harbor Loft 4A",
+    client: "Coastal Homes",
+    cleaner: "Andressa",
+    charged: "$125",
+    payout: "$85",
+    status: "Paid",
+  },
+  {
+    apartment: "Ocean View 9C",
+    client: "BlueKey Rentals",
+    cleaner: "Paula",
+    charged: "$210",
+    payout: "$150",
+    status: "Cleaning scheduled",
+  },
+];
+
+const priorities = [
+  "Create the MongoDB connection and first collections",
+  "Build Jobs, Clients, and Cleaners CRUD screens",
+  "Add invoice generation and printable client billing",
+];
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <main className="min-h-screen px-4 py-6 text-foreground sm:px-6 lg:px-10">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
+        <section className="card-shadow overflow-hidden rounded-[32px] border border-border bg-surface text-foreground backdrop-blur">
+          <div className="grid gap-8 px-6 py-8 lg:grid-cols-[1.3fr_0.7fr] lg:px-10 lg:py-10">
+            <div className="space-y-5">
+              <div className="inline-flex items-center rounded-full border border-[rgba(94,82,64,0.18)] bg-[rgba(255,255,255,0.55)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-accent-strong">
+                Gee Project v1
+              </div>
+              <div className="space-y-3">
+                <p className="font-serif text-4xl leading-tight text-ink-soft sm:text-5xl">
+                  A cleaner, calmer way to run apartment cleaning jobs.
+                </p>
+                <p className="max-w-2xl text-base leading-7 text-muted sm:text-lg">
+                  Track every apartment, see who cleaned it, measure profit per
+                  job, and stay on top of invoicing without juggling notes and
+                  spreadsheets.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-3 text-sm">
+                <div className="rounded-full bg-[rgba(201,111,59,0.12)] px-4 py-2 text-accent-strong">
+                  Jobs
+                </div>
+                <div className="rounded-full bg-[rgba(54,94,129,0.10)] px-4 py-2 text-[#375d81]">
+                  Cleaners
+                </div>
+                <div className="rounded-full bg-[rgba(34,94,67,0.10)] px-4 py-2 text-[#215940]">
+                  Clients
+                </div>
+                <div className="rounded-full bg-[rgba(90,52,110,0.08)] px-4 py-2 text-[#5a346e]">
+                  Invoices
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-[28px] border border-[rgba(94,82,64,0.14)] bg-surface-strong p-5">
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-muted">
+                What v1 includes
+              </p>
+              <div className="mt-4 space-y-3">
+                {priorities.map((item) => (
+                  <div
+                    key={item}
+                    className="rounded-2xl border border-border bg-white/70 px-4 py-3 text-sm leading-6 text-ink-soft"
+                  >
+                    {item}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {metrics.map((metric) => (
+            <article
+              key={metric.label}
+              className="card-shadow rounded-[28px] border border-border bg-surface p-5 backdrop-blur"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+              <p className="text-sm uppercase tracking-[0.18em] text-muted">
+                {metric.label}
+              </p>
+              <p className="mt-4 font-serif text-4xl text-ink-soft">
+                {metric.value}
+              </p>
+              <p className="mt-3 text-sm leading-6 text-muted">{metric.note}</p>
+            </article>
+          ))}
+        </section>
+
+        <section className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+          <article className="card-shadow rounded-[32px] border border-border bg-surface p-6 backdrop-blur">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm uppercase tracking-[0.18em] text-muted">
+                  Recent jobs
+                </p>
+                <h2 className="mt-2 font-serif text-3xl text-ink-soft">
+                  Snapshot of the work queue
+                </h2>
+              </div>
+              <div className="rounded-full bg-[rgba(201,111,59,0.12)] px-3 py-1 text-sm text-accent-strong">
+                Demo data
+              </div>
+            </div>
+
+            <div className="mt-6 overflow-hidden rounded-[24px] border border-border">
+              <div className="hidden grid-cols-[1.35fr_1fr_1fr_0.8fr_0.8fr_1fr] gap-4 bg-[rgba(67,56,51,0.04)] px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-muted md:grid">
+                <span>Apartment</span>
+                <span>Client</span>
+                <span>Cleaner</span>
+                <span>Charged</span>
+                <span>Payout</span>
+                <span>Status</span>
+              </div>
+
+              {recentJobs.map((job) => (
+                <div
+                  key={job.apartment}
+                  className="grid gap-3 border-t border-border px-4 py-4 text-sm first:border-t-0 md:grid-cols-[1.35fr_1fr_1fr_0.8fr_0.8fr_1fr] md:items-center md:gap-4"
+                >
+                  <div>
+                    <p className="font-semibold text-ink-soft">{job.apartment}</p>
+                    <p className="text-xs uppercase tracking-[0.18em] text-muted md:hidden">
+                      Apartment
+                    </p>
+                  </div>
+                  <div>{job.client}</div>
+                  <div>{job.cleaner}</div>
+                  <div>{job.charged}</div>
+                  <div>{job.payout}</div>
+                  <div>
+                    <span className="inline-flex rounded-full bg-[rgba(54,94,129,0.10)] px-3 py-1 text-xs font-semibold text-[#375d81]">
+                      {job.status}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </article>
+
+          <article className="card-shadow rounded-[32px] border border-border bg-[linear-gradient(180deg,rgba(255,250,244,0.96),rgba(247,241,232,0.92))] p-6">
+            <p className="text-sm uppercase tracking-[0.18em] text-muted">
+              Data foundation
+            </p>
+            <h2 className="mt-2 font-serif text-3xl text-ink-soft">
+              MongoDB-ready from day one
+            </h2>
+            <p className="mt-4 text-sm leading-7 text-muted">
+              The project now includes starter models for clients, cleaners,
+              jobs, and invoices, plus a reusable MongoDB connection helper for
+              the next CRUD step.
+            </p>
+
+            <div className="mt-6 space-y-3">
+              {[
+                "Client records with contact details",
+                "Cleaner profiles and payment totals",
+                "Job records with revenue and payout fields",
+                "Invoices linked back to one or more jobs",
+              ].map((item) => (
+                <div
+                  key={item}
+                  className="rounded-2xl border border-border bg-white/70 px-4 py-3 text-sm text-ink-soft"
+                >
+                  {item}
+                </div>
+              ))}
+            </div>
+          </article>
+        </section>
+      </div>
+    </main>
   );
 }
