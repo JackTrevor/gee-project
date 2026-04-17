@@ -1,15 +1,18 @@
+export type UserRole = "admin" | "staff";
+
+export type SessionUser = {
+  userId: string;
+  email: string;
+  name: string;
+  role: UserRole;
+};
+
+type SessionPayload = SessionUser & {
+  expiresAt: number;
+};
+
 const SESSION_COOKIE_NAME = "gee-project-session";
 const SESSION_DURATION_MS = 1000 * 60 * 60 * 24 * 14;
-
-function getAppPassword() {
-  const password = process.env.APP_PASSWORD;
-
-  if (!password) {
-    throw new Error("Missing APP_PASSWORD environment variable.");
-  }
-
-  return password;
-}
 
 function getSessionSecret() {
   const secret = process.env.APP_SESSION_SECRET;
@@ -65,10 +68,38 @@ async function createSignature(value: string) {
   return base64UrlEncode(new Uint8Array(signature));
 }
 
-export async function createSessionToken() {
+async function readSessionPayload(token?: string | null) {
+  if (!token) {
+    return null;
+  }
+
+  const [encodedPayload, signature] = token.split(".");
+  if (!encodedPayload || !signature) {
+    return null;
+  }
+
+  const expectedSignature = await createSignature(encodedPayload);
+  if (!safeEqual(signature, expectedSignature)) {
+    return null;
+  }
+
+  try {
+    const payload = JSON.parse(base64UrlDecode(encodedPayload).toString("utf8")) as SessionPayload;
+    if (typeof payload.expiresAt !== "number" || payload.expiresAt <= Date.now()) {
+      return null;
+    }
+
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+export async function createSessionToken(user: SessionUser) {
   const payload = JSON.stringify({
+    ...user,
     expiresAt: Date.now() + SESSION_DURATION_MS,
-  });
+  } satisfies SessionPayload);
 
   const encodedPayload = base64UrlEncode(new TextEncoder().encode(payload));
   const signature = await createSignature(encodedPayload);
@@ -77,29 +108,23 @@ export async function createSessionToken() {
 }
 
 export async function verifySessionToken(token?: string | null) {
-  if (!token) {
-    return false;
+  const payload = await readSessionPayload(token);
+  return Boolean(payload);
+}
+
+export async function getSessionUser(token?: string | null) {
+  const payload = await readSessionPayload(token);
+
+  if (!payload) {
+    return null;
   }
 
-  const [encodedPayload, signature] = token.split(".");
-  if (!encodedPayload || !signature) {
-    return false;
-  }
-
-  const expectedSignature = await createSignature(encodedPayload);
-  if (!safeEqual(signature, expectedSignature)) {
-    return false;
-  }
-
-  try {
-    const payload = JSON.parse(base64UrlDecode(encodedPayload).toString("utf8")) as {
-      expiresAt?: number;
-    };
-
-    return typeof payload.expiresAt === "number" && payload.expiresAt > Date.now();
-  } catch {
-    return false;
-  }
+  return {
+    userId: payload.userId,
+    email: payload.email,
+    name: payload.name,
+    role: payload.role,
+  };
 }
 
 export function getSessionCookieName() {
@@ -108,8 +133,4 @@ export function getSessionCookieName() {
 
 export function getSessionDurationMs() {
   return SESSION_DURATION_MS;
-}
-
-export function isPasswordValid(password: string) {
-  return safeEqual(password, getAppPassword());
 }

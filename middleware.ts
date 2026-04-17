@@ -1,9 +1,10 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-import { getSessionCookieName, verifySessionToken } from "@/lib/auth";
+import { getSessionCookieName, getSessionUser, verifySessionToken } from "@/lib/auth";
 
-const PUBLIC_PATHS = ["/login", "/api/auth/login", "/api/auth/logout"];
+const PUBLIC_PATHS = ["/login", "/api/auth/login", "/api/auth/logout", "/api/auth/setup"];
+const ADMIN_PATH_PREFIXES = ["/users"];
 
 export async function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
@@ -21,6 +22,17 @@ export async function middleware(request: NextRequest) {
   );
 
   if (isAuthed) {
+    const sessionUser = await getSessionUser(
+      request.cookies.get(getSessionCookieName())?.value,
+    );
+
+    if (
+      ADMIN_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix)) &&
+      sessionUser?.role !== "admin"
+    ) {
+      return NextResponse.redirect(new URL("/jobs", request.url));
+    }
+
     if (pathname === "/login") {
       return NextResponse.redirect(new URL("/jobs", request.url));
     }

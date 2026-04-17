@@ -6,25 +6,43 @@ import {
   getSessionDurationMs,
 } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
-import { verifyPassword } from "@/lib/passwords";
+import { hashPassword } from "@/lib/passwords";
 import { User } from "@/models/User";
+
+function cleanText(value: FormDataEntryValue | null) {
+  return typeof value === "string" ? value.trim() : "";
+}
 
 export async function POST(request: Request) {
   const formData = await request.formData();
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
-  const password = String(formData.get("password") ?? "").trim();
+  const name = cleanText(formData.get("name"));
+  const email = cleanText(formData.get("email")).toLowerCase();
+  const password = cleanText(formData.get("password"));
   const nextPath = String(formData.get("next") ?? "/jobs");
 
   await connectToDatabase();
-  const user = await User.findOne({ email }).lean();
+  const existingUsers = await User.countDocuments();
 
-  if (!user || !user.active || !verifyPassword(password, user.passwordHash)) {
+  if (existingUsers > 0) {
     const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("error", "invalid");
-    loginUrl.searchParams.set("next", nextPath.startsWith("/") ? nextPath : "/jobs");
-
+    loginUrl.searchParams.set("error", "setup-closed");
     return NextResponse.redirect(loginUrl, 303);
   }
+
+  if (!name || !email || password.length < 8) {
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("error", "setup-invalid");
+    loginUrl.searchParams.set("next", nextPath.startsWith("/") ? nextPath : "/jobs");
+    return NextResponse.redirect(loginUrl, 303);
+  }
+
+  const user = await User.create({
+    name,
+    email,
+    passwordHash: hashPassword(password),
+    role: "admin",
+    active: true,
+  });
 
   const response = NextResponse.redirect(
     new URL(nextPath.startsWith("/") ? nextPath : "/jobs", request.url),

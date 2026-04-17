@@ -4,12 +4,14 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { getSessionCookieName, verifySessionToken } from "@/lib/auth";
+import { getSessionCookieName, getSessionUser, verifySessionToken } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
+import { hashPassword } from "@/lib/passwords";
 import { CleanerPayment } from "@/models/CleanerPayment";
 import { Cleaner } from "@/models/Cleaner";
 import { Client } from "@/models/Client";
 import { Job } from "@/models/Job";
+import { User } from "@/models/User";
 
 function cleanText(value: FormDataEntryValue | null) {
   return typeof value === "string" ? value.trim() : "";
@@ -38,12 +40,30 @@ async function assertAuthenticated() {
   if (!isAuthenticated) {
     throw new Error("Unauthorized request.");
   }
+
+  const sessionUser = await getSessionUser(token);
+  if (!sessionUser) {
+    throw new Error("Unauthorized request.");
+  }
+
+  return sessionUser;
+}
+
+async function assertAdmin() {
+  const sessionUser = await assertAuthenticated();
+
+  if (sessionUser.role !== "admin") {
+    throw new Error("Admin access is required.");
+  }
+
+  return sessionUser;
 }
 
 function revalidateAppPaths() {
   revalidatePath("/");
   revalidatePath("/jobs");
   revalidatePath("/payments");
+  revalidatePath("/users");
 }
 
 export async function createClient(formData: FormData) {
@@ -303,4 +323,33 @@ export async function createCleanerPayment(formData: FormData) {
 
   revalidateAppPaths();
   redirect(`/payments/${payment._id.toString()}`);
+}
+
+export async function createUserAccount(formData: FormData) {
+  await assertAdmin();
+  await connectToDatabase();
+
+  const name = cleanText(formData.get("name"));
+  const email = cleanText(formData.get("email")).toLowerCase();
+  const password = cleanText(formData.get("password"));
+  const role = cleanText(formData.get("role")) || "staff";
+
+  if (!name || !email || password.length < 8) {
+    throw new Error("Name, email, and an 8+ character password are required.");
+  }
+
+  const existingUser = await User.findOne({ email }).lean();
+  if (existingUser) {
+    throw new Error("A user with that email already exists.");
+  }
+
+  await User.create({
+    name,
+    email,
+    passwordHash: hashPassword(password),
+    role: role === "admin" ? "admin" : "staff",
+    active: true,
+  });
+
+  revalidateAppPaths();
 }
