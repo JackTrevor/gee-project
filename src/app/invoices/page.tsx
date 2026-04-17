@@ -64,6 +64,12 @@ export default async function InvoicesPage() {
                 >
                   Overview
                 </Link>
+                <Link
+                  href="/reports"
+                  className="rounded-full border border-border bg-white/70 px-4 py-2 text-ink-soft transition hover:bg-white"
+                >
+                  Reports
+                </Link>
               </div>
             </div>
 
