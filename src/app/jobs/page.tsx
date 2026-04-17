@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { createCleaner, createClient, createJob } from "@/app/actions";
+import { LogoutButton } from "@/components/logout-button";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Cleaner } from "@/models/Cleaner";
@@ -197,8 +198,11 @@ export default async function JobsPage() {
           <div className="flex flex-col gap-6 px-6 py-8 lg:px-10 lg:py-10">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div className="space-y-3">
-                <div className="inline-flex items-center rounded-full border border-[rgba(94,82,64,0.18)] bg-[rgba(255,255,255,0.55)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-accent-strong">
-                  Operations workspace
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="inline-flex items-center rounded-full border border-[rgba(94,82,64,0.18)] bg-[rgba(255,255,255,0.55)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-accent-strong">
+                    Operations workspace
+                  </div>
+                  <LogoutButton />
                 </div>
                 <h1 className="font-serif text-4xl leading-tight text-ink-soft sm:text-5xl">
                   Jobs, clients, and cleaners in one working view.

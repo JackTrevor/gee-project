@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { LogoutButton } from "@/components/logout-button";
+
 const metrics = [
   { label: "Monthly Revenue", value: "$8,640", note: "32 jobs billed this month" },
   { label: "Cleaner Payouts", value: "$5,970", note: "9 active cleaners" },
@@ -47,8 +49,11 @@ export default function Home() {
         <section className="card-shadow overflow-hidden rounded-[32px] border border-border bg-surface text-foreground backdrop-blur">
           <div className="grid gap-8 px-6 py-8 lg:grid-cols-[1.3fr_0.7fr] lg:px-10 lg:py-10">
             <div className="space-y-5">
-              <div className="inline-flex items-center rounded-full border border-[rgba(94,82,64,0.18)] bg-[rgba(255,255,255,0.55)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-accent-strong">
-                Gee Project v1
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="inline-flex items-center rounded-full border border-[rgba(94,82,64,0.18)] bg-[rgba(255,255,255,0.55)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-accent-strong">
+                  Gee Project v1
+                </div>
+                <LogoutButton />
               </div>
               <div className="space-y-3">
                 <p className="font-serif text-4xl leading-tight text-ink-soft sm:text-5xl">
