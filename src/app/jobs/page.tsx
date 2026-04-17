@@ -225,7 +225,10 @@ export default async function JobsPage() {
                         </p>
                       ) : null}
 
-                      <details className="mt-4 rounded-[24px] border border-border bg-[rgba(255,255,255,0.65)]">
+                      <details
+                        key={`${job._id}-${job.updatedAt ? new Date(job.updatedAt).toISOString() : "initial"}`}
+                        className="mt-4 rounded-[24px] border border-border bg-[rgba(255,255,255,0.65)]"
+                      >
                         <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-ink-soft">
                           Edit job details
                         </summary>
@@ -412,7 +415,7 @@ export default async function JobsPage() {
 
                     return (
                       <details
-                        key={client._id}
+                        key={`${client._id}-${client.updatedAt ? new Date(client.updatedAt).toISOString() : "initial"}`}
                         className="rounded-[24px] border border-border bg-white/70"
                       >
                         <summary className="cursor-pointer list-none px-4 py-3">
@@ -545,7 +548,7 @@ export default async function JobsPage() {
 
                     return (
                       <details
-                        key={cleaner._id}
+                        key={`${cleaner._id}-${cleaner.updatedAt ? new Date(cleaner.updatedAt).toISOString() : "initial"}`}
                         className="rounded-[24px] border border-border bg-white/70"
                       >
                         <summary className="cursor-pointer list-none px-4 py-3">

@@ -10,6 +10,7 @@ export type ClientOption = {
   email?: string;
   quickbooksCustomerId?: string;
   notes?: string;
+  updatedAt?: string | Date;
 };
 
 export type CleanerOption = {
@@ -20,6 +21,7 @@ export type CleanerOption = {
   active: boolean;
   quickbooksVendorId?: string;
   notes?: string;
+  updatedAt?: string | Date;
 };
 
 export type JobView = {
@@ -35,6 +37,7 @@ export type JobView = {
   notes?: string;
   clientId: ClientOption | null;
   cleanerId: CleanerOption | null;
+  updatedAt: string | Date;
 };
 
 export async function getDashboardData() {
@@ -56,6 +59,7 @@ export async function getDashboardData() {
     email?: string;
     quickbooksCustomerId?: string;
     notes?: string;
+    updatedAt: string | Date;
   }>;
 
   const cleaners = cleanersRaw as Array<{
@@ -66,6 +70,7 @@ export async function getDashboardData() {
     active: boolean;
     quickbooksVendorId?: string;
     notes?: string;
+    updatedAt: string | Date;
   }>;
 
   const jobs = jobsRaw as unknown as Array<{
@@ -79,6 +84,7 @@ export async function getDashboardData() {
     clientPaymentStatus: string;
     cleanerPaymentStatus: string;
     notes?: string;
+    updatedAt: string | Date;
     clientId?: {
       _id: { toString(): string };
       name: string;
@@ -101,6 +107,7 @@ export async function getDashboardData() {
     email: client.email,
     quickbooksCustomerId: client.quickbooksCustomerId,
     notes: client.notes,
+    updatedAt: client.updatedAt,
   }));
 
   const normalizedCleaners: CleanerOption[] = cleaners.map((cleaner) => ({
@@ -111,6 +118,7 @@ export async function getDashboardData() {
     active: cleaner.active,
     quickbooksVendorId: cleaner.quickbooksVendorId,
     notes: cleaner.notes,
+    updatedAt: cleaner.updatedAt,
   }));
 
   const normalizedJobs: JobView[] = jobs.map((job) => ({
@@ -124,6 +132,7 @@ export async function getDashboardData() {
     clientPaymentStatus: job.clientPaymentStatus,
     cleanerPaymentStatus: job.cleanerPaymentStatus,
     notes: job.notes,
+    updatedAt: job.updatedAt,
     clientId: job.clientId
       ? {
           _id: job.clientId._id.toString(),
