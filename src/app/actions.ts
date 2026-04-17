@@ -2,9 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 import { getSessionCookieName, verifySessionToken } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
+import { CleanerPayment } from "@/models/CleanerPayment";
 import { Cleaner } from "@/models/Cleaner";
 import { Client } from "@/models/Client";
 import { Job } from "@/models/Job";
@@ -41,6 +43,7 @@ async function assertAuthenticated() {
 function revalidateAppPaths() {
   revalidatePath("/");
   revalidatePath("/jobs");
+  revalidatePath("/payments");
 }
 
 export async function createClient(formData: FormData) {
@@ -247,4 +250,57 @@ export async function deleteJob(formData: FormData) {
 
   await Job.findByIdAndDelete(id);
   revalidateAppPaths();
+}
+
+export async function createCleanerPayment(formData: FormData) {
+  await assertAuthenticated();
+  await connectToDatabase();
+
+  const cleanerId = cleanText(formData.get("cleanerId"));
+  const paymentDate = cleanText(formData.get("paymentDate"));
+  const checkNumber = cleanText(formData.get("checkNumber"));
+  const selectedJobIds = formData
+    .getAll("jobIds")
+    .map((value) => cleanText(value))
+    .filter(Boolean);
+
+  if (!cleanerId || !paymentDate || !checkNumber || selectedJobIds.length === 0) {
+    throw new Error("Cleaner, payment date, check number, and at least one job are required.");
+  }
+
+  const jobs = await Job.find({
+    _id: { $in: selectedJobIds },
+    cleanerId,
+    cleanerPaymentStatus: "pending",
+  }).lean();
+
+  if (jobs.length !== selectedJobIds.length) {
+    throw new Error("Some selected jobs are no longer available for payment.");
+  }
+
+  const totalAmount = jobs.reduce((sum, job) => sum + job.cleanerPayout, 0);
+
+  const payment = await CleanerPayment.create({
+    cleanerId,
+    jobIds: selectedJobIds,
+    paymentDate: new Date(paymentDate),
+    checkNumber,
+    totalAmount,
+    memo: cleanOptionalText(formData.get("memo")),
+    notes: cleanOptionalText(formData.get("notes")),
+    status: "issued",
+  });
+
+  await Job.updateMany(
+    { _id: { $in: selectedJobIds } },
+    {
+      $set: {
+        cleanerPaymentStatus: "paid",
+        cleanerPaymentId: payment._id,
+      },
+    },
+  );
+
+  revalidateAppPaths();
+  redirect(`/payments/${payment._id.toString()}`);
 }

@@ -24,6 +24,7 @@ const jobSchema = new Schema(
       enum: ["pending", "paid"],
       default: "pending",
     },
+    cleanerPaymentId: { type: Schema.Types.ObjectId, ref: "CleanerPayment" },
     notes: { type: String, trim: true },
   },
   { timestamps: true },

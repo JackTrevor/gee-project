@@ -92,6 +92,12 @@ export default async function JobsPage() {
                 >
                   Back to overview
                 </Link>
+                <Link
+                  href="/payments"
+                  className="rounded-full border border-border bg-white/70 px-4 py-2 text-ink-soft transition hover:bg-white"
+                >
+                  Open payments
+                </Link>
               </div>
             </div>
 
