@@ -17,11 +17,12 @@ export async function POST(request: Request) {
     loginUrl.searchParams.set("error", "invalid");
     loginUrl.searchParams.set("next", nextPath.startsWith("/") ? nextPath : "/jobs");
 
-    return NextResponse.redirect(loginUrl);
+    return NextResponse.redirect(loginUrl, 303);
   }
 
   const response = NextResponse.redirect(
     new URL(nextPath.startsWith("/") ? nextPath : "/jobs", request.url),
+    303,
   );
 
   response.cookies.set({
