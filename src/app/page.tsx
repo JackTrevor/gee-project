@@ -44,8 +44,9 @@ export default async function Home() {
 
       return map;
     }, new Map())
-    .values()
-    .toArray()
+    .values();
+
+  const rankedClients = Array.from(topClients)
     .sort((left, right) => right.revenue - left.revenue)
     .slice(0, 4);
 
@@ -208,13 +209,13 @@ export default async function Home() {
                 Who brings the most work?
               </h2>
 
-              {topClients.length === 0 ? (
+              {rankedClients.length === 0 ? (
                 <div className="mt-6 rounded-[24px] border border-dashed border-border bg-white/60 px-5 py-6 text-sm leading-7 text-muted">
                   Client rankings will appear once you start recording jobs.
                 </div>
               ) : (
                 <div className="mt-6 space-y-3">
-                  {topClients.map((client) => (
+                  {rankedClients.map((client) => (
                     <div
                       key={client.name}
                       className="rounded-2xl border border-border bg-white/70 px-4 py-4"

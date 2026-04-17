@@ -6,14 +6,20 @@ export type ClientOption = {
   _id: string;
   name: string;
   companyName?: string;
+  phone?: string;
+  email?: string;
   quickbooksCustomerId?: string;
+  notes?: string;
 };
 
 export type CleanerOption = {
   _id: string;
   name: string;
+  phone?: string;
+  email?: string;
   active: boolean;
   quickbooksVendorId?: string;
+  notes?: string;
 };
 
 export type JobView = {
@@ -46,14 +52,20 @@ export async function getDashboardData() {
     _id: { toString(): string };
     name: string;
     companyName?: string;
+    phone?: string;
+    email?: string;
     quickbooksCustomerId?: string;
+    notes?: string;
   }>;
 
   const cleaners = cleanersRaw as Array<{
     _id: { toString(): string };
     name: string;
+    phone?: string;
+    email?: string;
     active: boolean;
     quickbooksVendorId?: string;
+    notes?: string;
   }>;
 
   const jobs = jobsRaw as unknown as Array<{
@@ -85,14 +97,20 @@ export async function getDashboardData() {
     _id: client._id.toString(),
     name: client.name,
     companyName: client.companyName,
+    phone: client.phone,
+    email: client.email,
     quickbooksCustomerId: client.quickbooksCustomerId,
+    notes: client.notes,
   }));
 
   const normalizedCleaners: CleanerOption[] = cleaners.map((cleaner) => ({
     _id: cleaner._id.toString(),
     name: cleaner.name,
+    phone: cleaner.phone,
+    email: cleaner.email,
     active: cleaner.active,
     quickbooksVendorId: cleaner.quickbooksVendorId,
+    notes: cleaner.notes,
   }));
 
   const normalizedJobs: JobView[] = jobs.map((job) => ({

@@ -1,7 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 
+import { getSessionCookieName, verifySessionToken } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Cleaner } from "@/models/Cleaner";
 import { Client } from "@/models/Client";
@@ -26,7 +28,23 @@ function cleanNumber(value: FormDataEntryValue | null) {
   return parsed;
 }
 
+async function assertAuthenticated() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(getSessionCookieName())?.value;
+  const isAuthenticated = await verifySessionToken(token);
+
+  if (!isAuthenticated) {
+    throw new Error("Unauthorized request.");
+  }
+}
+
+function revalidateAppPaths() {
+  revalidatePath("/");
+  revalidatePath("/jobs");
+}
+
 export async function createClient(formData: FormData) {
+  await assertAuthenticated();
   await connectToDatabase();
 
   const name = cleanText(formData.get("name"));
@@ -42,10 +60,11 @@ export async function createClient(formData: FormData) {
     notes: cleanOptionalText(formData.get("notes")),
   });
 
-  revalidatePath("/jobs");
+  revalidateAppPaths();
 }
 
 export async function createCleaner(formData: FormData) {
+  await assertAuthenticated();
   await connectToDatabase();
 
   const name = cleanText(formData.get("name"));
@@ -61,10 +80,11 @@ export async function createCleaner(formData: FormData) {
     active: formData.get("active") === "on",
   });
 
-  revalidatePath("/jobs");
+  revalidateAppPaths();
 }
 
 export async function createJob(formData: FormData) {
+  await assertAuthenticated();
   await connectToDatabase();
 
   const apartmentName = cleanText(formData.get("apartmentName"));
@@ -90,5 +110,141 @@ export async function createJob(formData: FormData) {
     notes: cleanOptionalText(formData.get("notes")),
   });
 
-  revalidatePath("/jobs");
+  revalidateAppPaths();
+}
+
+export async function updateClient(formData: FormData) {
+  await assertAuthenticated();
+  await connectToDatabase();
+
+  const id = cleanText(formData.get("id"));
+  const name = cleanText(formData.get("name"));
+
+  if (!id || !name) {
+    throw new Error("Client id and name are required.");
+  }
+
+  await Client.findByIdAndUpdate(
+    id,
+    {
+      name,
+      companyName: cleanOptionalText(formData.get("companyName")),
+      phone: cleanOptionalText(formData.get("phone")),
+      email: cleanOptionalText(formData.get("email")),
+      notes: cleanOptionalText(formData.get("notes")),
+    },
+    { runValidators: true },
+  );
+
+  revalidateAppPaths();
+}
+
+export async function deleteClient(formData: FormData) {
+  await assertAuthenticated();
+  await connectToDatabase();
+
+  const id = cleanText(formData.get("id"));
+  if (!id) {
+    throw new Error("Client id is required.");
+  }
+
+  const linkedJobs = await Job.countDocuments({ clientId: id });
+  if (linkedJobs > 0) {
+    throw new Error("Remove or reassign this client's jobs before deleting it.");
+  }
+
+  await Client.findByIdAndDelete(id);
+  revalidateAppPaths();
+}
+
+export async function updateCleaner(formData: FormData) {
+  await assertAuthenticated();
+  await connectToDatabase();
+
+  const id = cleanText(formData.get("id"));
+  const name = cleanText(formData.get("name"));
+
+  if (!id || !name) {
+    throw new Error("Cleaner id and name are required.");
+  }
+
+  await Cleaner.findByIdAndUpdate(
+    id,
+    {
+      name,
+      phone: cleanOptionalText(formData.get("phone")),
+      email: cleanOptionalText(formData.get("email")),
+      notes: cleanOptionalText(formData.get("notes")),
+      active: formData.get("active") === "on",
+    },
+    { runValidators: true },
+  );
+
+  revalidateAppPaths();
+}
+
+export async function deleteCleaner(formData: FormData) {
+  await assertAuthenticated();
+  await connectToDatabase();
+
+  const id = cleanText(formData.get("id"));
+  if (!id) {
+    throw new Error("Cleaner id is required.");
+  }
+
+  const linkedJobs = await Job.countDocuments({ cleanerId: id });
+  if (linkedJobs > 0) {
+    throw new Error("Remove or reassign this cleaner's jobs before deleting them.");
+  }
+
+  await Cleaner.findByIdAndDelete(id);
+  revalidateAppPaths();
+}
+
+export async function updateJob(formData: FormData) {
+  await assertAuthenticated();
+  await connectToDatabase();
+
+  const id = cleanText(formData.get("id"));
+  const apartmentName = cleanText(formData.get("apartmentName"));
+  const clientId = cleanText(formData.get("clientId"));
+  const cleanerId = cleanText(formData.get("cleanerId"));
+  const cleaningDate = cleanText(formData.get("cleaningDate"));
+
+  if (!id || !apartmentName || !clientId || !cleanerId || !cleaningDate) {
+    throw new Error("Job id, apartment, client, cleaner, and date are required.");
+  }
+
+  await Job.findByIdAndUpdate(
+    id,
+    {
+      apartmentName,
+      apartmentAddress: cleanOptionalText(formData.get("apartmentAddress")),
+      clientId,
+      cleanerId,
+      cleaningDate: new Date(cleaningDate),
+      amountCharged: cleanNumber(formData.get("amountCharged")),
+      cleanerPayout: cleanNumber(formData.get("cleanerPayout")),
+      jobStatus: cleanText(formData.get("jobStatus")) || "scheduled",
+      clientPaymentStatus: cleanText(formData.get("clientPaymentStatus")) || "pending",
+      cleanerPaymentStatus: cleanText(formData.get("cleanerPaymentStatus")) || "pending",
+      notes: cleanOptionalText(formData.get("notes")),
+    },
+    { runValidators: true },
+  );
+
+  revalidateAppPaths();
+}
+
+export async function deleteJob(formData: FormData) {
+  await assertAuthenticated();
+  await connectToDatabase();
+
+  const id = cleanText(formData.get("id"));
+  if (!id) {
+    throw new Error("Job id is required.");
+  }
+
+  await Job.findByIdAndDelete(id);
+  revalidateAppPaths();
 }

@@ -1,6 +1,16 @@
 import Link from "next/link";
 
-import { createCleaner, createClient, createJob } from "@/app/actions";
+import {
+  createCleaner,
+  createClient,
+  createJob,
+  deleteCleaner,
+  deleteClient,
+  deleteJob,
+  updateCleaner,
+  updateClient,
+  updateJob,
+} from "@/app/actions";
 import { LogoutButton } from "@/components/logout-button";
 import { getDashboardData } from "@/lib/dashboard";
 import { formatCurrency, formatDate } from "@/lib/format";
@@ -36,6 +46,20 @@ export default async function JobsPage() {
   const { clients, cleaners, jobs, totals } = await getJobsPageData();
 
   const canCreateJob = clients.length > 0 && cleaners.some((cleaner) => cleaner.active);
+  const clientJobCounts = jobs.reduce<Record<string, number>>((counts, job) => {
+    const id = job.clientId?._id;
+    if (id) {
+      counts[id] = (counts[id] ?? 0) + 1;
+    }
+    return counts;
+  }, {});
+  const cleanerJobCounts = jobs.reduce<Record<string, number>>((counts, job) => {
+    const id = job.cleanerId?._id;
+    if (id) {
+      counts[id] = (counts[id] ?? 0) + 1;
+    }
+    return counts;
+  }, {});
 
   return (
     <main className="min-h-screen px-4 py-6 text-foreground sm:px-6 lg:px-10">
@@ -200,6 +224,132 @@ export default async function JobsPage() {
                           {job.notes}
                         </p>
                       ) : null}
+
+                      <details className="mt-4 rounded-[24px] border border-border bg-[rgba(255,255,255,0.65)]">
+                        <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-ink-soft">
+                          Edit job details
+                        </summary>
+                        <div className="border-t border-border px-4 py-4">
+                          <form action={updateJob} className="space-y-3">
+                            <input type="hidden" name="id" value={job._id} />
+                            <input
+                              name="apartmentName"
+                              defaultValue={job.apartmentName}
+                              placeholder="Apartment name or short label"
+                              className="w-full rounded-2xl border border-border bg-white/80 px-4 py-3 outline-none transition focus:border-accent"
+                              required
+                            />
+                            <input
+                              name="apartmentAddress"
+                              defaultValue={job.apartmentAddress}
+                              placeholder="Apartment address"
+                              className="w-full rounded-2xl border border-border bg-white/80 px-4 py-3 outline-none transition focus:border-accent"
+                            />
+                            <div className="grid gap-3 md:grid-cols-2">
+                              <select
+                                name="clientId"
+                                defaultValue={job.clientId?._id ?? ""}
+                                className="w-full rounded-2xl border border-border bg-white/80 px-4 py-3 outline-none transition focus:border-accent"
+                                required
+                              >
+                                {clients.map((client) => (
+                                  <option key={client._id} value={client._id}>
+                                    {client.companyName || client.name}
+                                  </option>
+                                ))}
+                              </select>
+                              <select
+                                name="cleanerId"
+                                defaultValue={job.cleanerId?._id ?? ""}
+                                className="w-full rounded-2xl border border-border bg-white/80 px-4 py-3 outline-none transition focus:border-accent"
+                                required
+                              >
+                                {cleaners.map((cleaner) => (
+                                  <option key={cleaner._id} value={cleaner._id}>
+                                    {cleaner.name}
+                                    {cleaner.active ? "" : " (inactive)"}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <div className="grid gap-3 md:grid-cols-3">
+                              <input
+                                name="cleaningDate"
+                                type="date"
+                                defaultValue={new Date(job.cleaningDate).toISOString().split("T")[0]}
+                                className="w-full rounded-2xl border border-border bg-white/80 px-4 py-3 outline-none transition focus:border-accent"
+                                required
+                              />
+                              <input
+                                name="amountCharged"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                defaultValue={job.amountCharged}
+                                placeholder="Amount charged"
+                                className="w-full rounded-2xl border border-border bg-white/80 px-4 py-3 outline-none transition focus:border-accent"
+                                required
+                              />
+                              <input
+                                name="cleanerPayout"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                defaultValue={job.cleanerPayout}
+                                placeholder="Cleaner payout"
+                                className="w-full rounded-2xl border border-border bg-white/80 px-4 py-3 outline-none transition focus:border-accent"
+                                required
+                              />
+                            </div>
+                            <div className="grid gap-3 md:grid-cols-3">
+                              <select
+                                name="jobStatus"
+                                defaultValue={job.jobStatus}
+                                className="w-full rounded-2xl border border-border bg-white/80 px-4 py-3 outline-none transition focus:border-accent"
+                              >
+                                <option value="scheduled">Scheduled</option>
+                                <option value="completed">Completed</option>
+                                <option value="cancelled">Cancelled</option>
+                              </select>
+                              <select
+                                name="clientPaymentStatus"
+                                defaultValue={job.clientPaymentStatus}
+                                className="w-full rounded-2xl border border-border bg-white/80 px-4 py-3 outline-none transition focus:border-accent"
+                              >
+                                <option value="pending">Client payment pending</option>
+                                <option value="invoiced">Client invoiced</option>
+                                <option value="paid">Client paid</option>
+                              </select>
+                              <select
+                                name="cleanerPaymentStatus"
+                                defaultValue={job.cleanerPaymentStatus}
+                                className="w-full rounded-2xl border border-border bg-white/80 px-4 py-3 outline-none transition focus:border-accent"
+                              >
+                                <option value="pending">Cleaner unpaid</option>
+                                <option value="paid">Cleaner paid</option>
+                              </select>
+                            </div>
+                            <textarea
+                              name="notes"
+                              defaultValue={job.notes}
+                              placeholder="Special instructions, invoice notes, unit condition, or payout comments"
+                              rows={4}
+                              className="w-full rounded-2xl border border-border bg-white/80 px-4 py-3 outline-none transition focus:border-accent"
+                            />
+                            <div className="flex flex-wrap gap-3">
+                              <button className="rounded-full bg-[#215940] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#184330]">
+                                Save changes
+                              </button>
+                            </div>
+                          </form>
+                          <form action={deleteJob} className="mt-3">
+                            <input type="hidden" name="id" value={job._id} />
+                            <button className="rounded-full border border-[rgba(137,48,48,0.22)] bg-[rgba(137,48,48,0.10)] px-5 py-3 text-sm font-semibold text-[#8a2f2f] transition hover:bg-[rgba(137,48,48,0.16)]">
+                              Delete job
+                            </button>
+                          </form>
+                        </div>
+                      </details>
                     </article>
                   );
                 })}
@@ -250,6 +400,96 @@ export default async function JobsPage() {
                   Save client
                 </button>
               </form>
+
+              <div className="mt-6 space-y-3">
+                {clients.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-border bg-white/60 px-4 py-4 text-sm text-muted">
+                    No clients added yet.
+                  </div>
+                ) : (
+                  clients.map((client) => {
+                    const linkedJobs = clientJobCounts[client._id] ?? 0;
+
+                    return (
+                      <details
+                        key={client._id}
+                        className="rounded-[24px] border border-border bg-white/70"
+                      >
+                        <summary className="cursor-pointer list-none px-4 py-3">
+                          <div className="flex items-center justify-between gap-4">
+                            <div>
+                              <p className="font-semibold text-ink-soft">
+                                {client.companyName || client.name}
+                              </p>
+                              <p className="text-sm text-muted">
+                                {linkedJobs} linked {linkedJobs === 1 ? "job" : "jobs"}
+                              </p>
+                            </div>
+                            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
+                              Manage
+                            </span>
+                          </div>
+                        </summary>
+                        <div className="border-t border-border px-4 py-4">
+                          <form action={updateClient} className="space-y-3">
+                            <input type="hidden" name="id" value={client._id} />
+                            <input
+                              name="name"
+                              defaultValue={client.name}
+                              placeholder="Client name"
+                              className="w-full rounded-2xl border border-border bg-white/80 px-4 py-3 outline-none transition focus:border-accent"
+                              required
+                            />
+                            <input
+                              name="companyName"
+                              defaultValue={client.companyName}
+                              placeholder="Company name"
+                              className="w-full rounded-2xl border border-border bg-white/80 px-4 py-3 outline-none transition focus:border-accent"
+                            />
+                            <div className="grid gap-3 md:grid-cols-2">
+                              <input
+                                name="phone"
+                                defaultValue={client.phone}
+                                placeholder="Phone"
+                                className="w-full rounded-2xl border border-border bg-white/80 px-4 py-3 outline-none transition focus:border-accent"
+                              />
+                              <input
+                                name="email"
+                                defaultValue={client.email}
+                                placeholder="Email"
+                                type="email"
+                                className="w-full rounded-2xl border border-border bg-white/80 px-4 py-3 outline-none transition focus:border-accent"
+                              />
+                            </div>
+                            <textarea
+                              name="notes"
+                              defaultValue={client.notes}
+                              placeholder="Notes"
+                              rows={3}
+                              className="w-full rounded-2xl border border-border bg-white/80 px-4 py-3 outline-none transition focus:border-accent"
+                            />
+                            <button className="rounded-full bg-accent px-5 py-3 text-sm font-semibold text-white transition hover:bg-accent-strong">
+                              Update client
+                            </button>
+                          </form>
+                          {linkedJobs === 0 ? (
+                            <form action={deleteClient} className="mt-3">
+                              <input type="hidden" name="id" value={client._id} />
+                              <button className="rounded-full border border-[rgba(137,48,48,0.22)] bg-[rgba(137,48,48,0.10)] px-5 py-3 text-sm font-semibold text-[#8a2f2f] transition hover:bg-[rgba(137,48,48,0.16)]">
+                                Delete client
+                              </button>
+                            </form>
+                          ) : (
+                            <p className="mt-3 text-sm text-muted">
+                              Remove or reassign linked jobs before deleting this client.
+                            </p>
+                          )}
+                        </div>
+                      </details>
+                    );
+                  })
+                )}
+              </div>
             </article>
 
             <article className="card-shadow rounded-[32px] border border-border bg-surface p-6 backdrop-blur">
@@ -293,6 +533,94 @@ export default async function JobsPage() {
                   Save cleaner
                 </button>
               </form>
+
+              <div className="mt-6 space-y-3">
+                {cleaners.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-border bg-white/60 px-4 py-4 text-sm text-muted">
+                    No cleaners added yet.
+                  </div>
+                ) : (
+                  cleaners.map((cleaner) => {
+                    const linkedJobs = cleanerJobCounts[cleaner._id] ?? 0;
+
+                    return (
+                      <details
+                        key={cleaner._id}
+                        className="rounded-[24px] border border-border bg-white/70"
+                      >
+                        <summary className="cursor-pointer list-none px-4 py-3">
+                          <div className="flex items-center justify-between gap-4">
+                            <div>
+                              <p className="font-semibold text-ink-soft">{cleaner.name}</p>
+                              <p className="text-sm text-muted">
+                                {cleaner.active ? "Active" : "Inactive"}
+                                {" · "}
+                                {linkedJobs} linked {linkedJobs === 1 ? "job" : "jobs"}
+                              </p>
+                            </div>
+                            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
+                              Manage
+                            </span>
+                          </div>
+                        </summary>
+                        <div className="border-t border-border px-4 py-4">
+                          <form action={updateCleaner} className="space-y-3">
+                            <input type="hidden" name="id" value={cleaner._id} />
+                            <input
+                              name="name"
+                              defaultValue={cleaner.name}
+                              placeholder="Cleaner name"
+                              className="w-full rounded-2xl border border-border bg-white/80 px-4 py-3 outline-none transition focus:border-accent"
+                              required
+                            />
+                            <div className="grid gap-3 md:grid-cols-2">
+                              <input
+                                name="phone"
+                                defaultValue={cleaner.phone}
+                                placeholder="Phone"
+                                className="w-full rounded-2xl border border-border bg-white/80 px-4 py-3 outline-none transition focus:border-accent"
+                              />
+                              <input
+                                name="email"
+                                defaultValue={cleaner.email}
+                                placeholder="Email"
+                                type="email"
+                                className="w-full rounded-2xl border border-border bg-white/80 px-4 py-3 outline-none transition focus:border-accent"
+                              />
+                            </div>
+                            <textarea
+                              name="notes"
+                              defaultValue={cleaner.notes}
+                              placeholder="Notes"
+                              rows={3}
+                              className="w-full rounded-2xl border border-border bg-white/80 px-4 py-3 outline-none transition focus:border-accent"
+                            />
+                            <label className="flex items-center gap-3 rounded-2xl border border-border bg-white/70 px-4 py-3 text-sm text-ink-soft">
+                              <input type="checkbox" name="active" defaultChecked={cleaner.active} />
+                              Active cleaner
+                            </label>
+                            <button className="rounded-full bg-[#375d81] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#2b4a66]">
+                              Update cleaner
+                            </button>
+                          </form>
+                          {linkedJobs === 0 ? (
+                            <form action={deleteCleaner} className="mt-3">
+                              <input type="hidden" name="id" value={cleaner._id} />
+                              <button className="rounded-full border border-[rgba(137,48,48,0.22)] bg-[rgba(137,48,48,0.10)] px-5 py-3 text-sm font-semibold text-[#8a2f2f] transition hover:bg-[rgba(137,48,48,0.16)]">
+                                Delete cleaner
+                              </button>
+                            </form>
+                          ) : (
+                            <p className="mt-3 text-sm text-muted">
+                              Remove or reassign linked jobs before deleting this cleaner.
+                            </p>
+                          )}
+                        </div>
+                      </details>
+                    );
+                  })
+                )}
+              </div>
             </article>
 
             <article className="card-shadow rounded-[32px] border border-border bg-[linear-gradient(180deg,rgba(255,250,244,0.96),rgba(247,241,232,0.92))] p-6">
