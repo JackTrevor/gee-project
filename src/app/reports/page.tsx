@@ -106,6 +106,18 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
                 >
                   Invoices
                 </Link>
+                <Link
+                  href={`/api/reports/export/csv?from=${formatDateForInput(dateRange.from)}&to=${formatDateForInput(dateRange.to)}`}
+                  className="rounded-full border border-border bg-white/70 px-4 py-2 text-ink-soft transition hover:bg-white"
+                >
+                  Export CSV
+                </Link>
+                <Link
+                  href={`/api/reports/export/excel?from=${formatDateForInput(dateRange.from)}&to=${formatDateForInput(dateRange.to)}`}
+                  className="rounded-full border border-border bg-white/70 px-4 py-2 text-ink-soft transition hover:bg-white"
+                >
+                  Export Excel
+                </Link>
               </div>
             </div>
 

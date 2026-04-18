@@ -58,6 +58,37 @@ export type ReportsDateRange = {
   to?: Date;
 };
 
+export type ReportsExportData = {
+  summaryRows: Array<{ metric: string; value: number | string }>;
+  monthlyRows: Array<{
+    month: string;
+    jobs: number;
+    revenue: number;
+    payouts: number;
+    profit: number;
+  }>;
+  topClientRows: Array<{
+    client: string;
+    jobs: number;
+    revenue: number;
+  }>;
+  topCleanerRows: Array<{
+    cleaner: string;
+    jobs: number;
+    payouts: number;
+  }>;
+  receivableRows: Array<{
+    client: string;
+    openJobs: number;
+    amount: number;
+  }>;
+  payableRows: Array<{
+    cleaner: string;
+    unpaidJobs: number;
+    amount: number;
+  }>;
+};
+
 export async function getReportsData(range?: ReportsDateRange) {
   const dashboardData = await getDashboardData();
   const { jobs, clients, cleaners } = dashboardData;
@@ -226,5 +257,71 @@ export async function getReportsData(range?: ReportsDateRange) {
       .sort((left, right) => right.amount - left.amount)
       .slice(0, 5),
     statusMix,
+  };
+}
+
+export async function getReportsExportData(range?: ReportsDateRange): Promise<ReportsExportData> {
+  const reportData = await getReportsData(range);
+
+  return {
+    summaryRows: [
+      { metric: "From", value: reportData.dateRange.from.toISOString().slice(0, 10) },
+      { metric: "To", value: reportData.dateRange.to.toISOString().slice(0, 10) },
+      { metric: "Clients", value: reportData.counts.clients },
+      { metric: "Cleaners", value: reportData.counts.cleaners },
+      { metric: "Jobs in range", value: reportData.counts.jobs },
+      { metric: "All jobs on file", value: reportData.counts.allJobs },
+      { metric: "Revenue", value: reportData.totals.revenue },
+      { metric: "Cleaner payouts", value: reportData.totals.payouts },
+      { metric: "Net profit", value: reportData.totals.profit },
+      {
+        metric: "Outstanding client balance",
+        value: reportData.totals.outstandingClientBalance,
+      },
+      {
+        metric: "Outstanding cleaner balance",
+        value: reportData.totals.outstandingCleanerBalance,
+      },
+      { metric: "Scheduled jobs", value: reportData.statusMix.jobStatuses.scheduled ?? 0 },
+      { metric: "Completed jobs", value: reportData.statusMix.jobStatuses.completed ?? 0 },
+      { metric: "Cancelled jobs", value: reportData.statusMix.jobStatuses.cancelled ?? 0 },
+      {
+        metric: "Client invoices open",
+        value:
+          (reportData.statusMix.clientPaymentStatuses.pending ?? 0) +
+          (reportData.statusMix.clientPaymentStatuses.invoiced ?? 0),
+      },
+      {
+        metric: "Cleaner payouts open",
+        value: reportData.statusMix.cleanerPaymentStatuses.pending ?? 0,
+      },
+    ],
+    monthlyRows: reportData.monthly.map((month) => ({
+      month: month.label,
+      jobs: month.jobs,
+      revenue: month.revenue,
+      payouts: month.payouts,
+      profit: month.profit,
+    })),
+    topClientRows: reportData.topClients.map((client) => ({
+      client: client.name,
+      jobs: client.jobs,
+      revenue: client.value,
+    })),
+    topCleanerRows: reportData.topCleaners.map((cleaner) => ({
+      cleaner: cleaner.name,
+      jobs: cleaner.jobs,
+      payouts: cleaner.value,
+    })),
+    receivableRows: reportData.receivables.map((item) => ({
+      client: item.name,
+      openJobs: item.jobs,
+      amount: item.amount,
+    })),
+    payableRows: reportData.payables.map((item) => ({
+      cleaner: item.name,
+      unpaidJobs: item.jobs,
+      amount: item.amount,
+    })),
   };
 }
