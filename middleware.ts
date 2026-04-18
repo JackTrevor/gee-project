@@ -4,7 +4,8 @@ import { NextResponse } from "next/server";
 import { getSessionCookieName, getSessionUser, verifySessionToken } from "@/lib/auth";
 
 const PUBLIC_PATHS = ["/login", "/api/auth/login", "/api/auth/logout", "/api/auth/setup"];
-const ADMIN_PATH_PREFIXES = ["/users"];
+const ADMIN_PATH_PREFIXES = ["/users", "/reviews"];
+const CLEANER_ONLY_PATH_PREFIXES = ["/my-jobs"];
 
 export async function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
@@ -33,8 +34,17 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL("/jobs", request.url));
     }
 
-    if (pathname === "/login") {
+    if (
+      CLEANER_ONLY_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix)) &&
+      sessionUser?.role !== "cleaner"
+    ) {
       return NextResponse.redirect(new URL("/jobs", request.url));
+    }
+
+    if (pathname === "/login") {
+      return NextResponse.redirect(
+        new URL(sessionUser?.role === "cleaner" ? "/my-jobs" : "/jobs", request.url),
+      );
     }
 
     return NextResponse.next();

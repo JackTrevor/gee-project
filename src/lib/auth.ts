@@ -1,10 +1,11 @@
-export type UserRole = "admin" | "staff";
+export type UserRole = "admin" | "staff" | "cleaner";
 
 export type SessionUser = {
   userId: string;
   email: string;
   name: string;
   role: UserRole;
+  cleanerId?: string;
 };
 
 type SessionPayload = SessionUser & {
@@ -124,6 +125,7 @@ export async function getSessionUser(token?: string | null) {
     email: payload.email,
     name: payload.name,
     role: payload.role,
+    cleanerId: payload.cleanerId,
   };
 }
 

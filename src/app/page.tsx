@@ -1,6 +1,9 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 import { LogoutButton } from "@/components/logout-button";
+import { getSessionCookieName, getSessionUser } from "@/lib/auth";
 import { getDashboardData } from "@/lib/dashboard";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { connectToDatabase } from "@/lib/mongodb";
@@ -28,6 +31,13 @@ function Pill({ value }: { value: string }) {
 
 export default async function Home() {
   await connectToDatabase();
+  const cookieStore = await cookies();
+  const sessionUser = await getSessionUser(cookieStore.get(getSessionCookieName())?.value);
+
+  if (sessionUser?.role === "cleaner") {
+    redirect("/my-jobs");
+  }
+
   const { clients, cleaners, jobs, totals } = await getDashboardData();
 
   const activeCleaners = cleaners.filter((cleaner) => cleaner.active).length;
@@ -96,6 +106,18 @@ export default async function Home() {
                   className="rounded-full border border-border bg-white/70 px-4 py-2 text-ink-soft transition hover:bg-white"
                 >
                   Open reports
+                </Link>
+                <Link
+                  href="/reviews"
+                  className="rounded-full border border-border bg-white/70 px-4 py-2 text-ink-soft transition hover:bg-white"
+                >
+                  Review queue
+                </Link>
+                <Link
+                  href="/my-jobs"
+                  className="rounded-full border border-border bg-white/70 px-4 py-2 text-ink-soft transition hover:bg-white"
+                >
+                  Cleaner view
                 </Link>
                 <Link
                   href="/users"
@@ -271,7 +293,7 @@ export default async function Home() {
                   "Edit and delete clients, cleaners, and jobs",
                   "Create invoices from completed jobs",
                   "Monthly charts and cleaner performance reporting",
-                  "QuickBooks customer, vendor, and invoice sync later",
+                  "Cleaner completion requests with admin approval",
                 ].map((item) => (
                   <div
                     key={item}

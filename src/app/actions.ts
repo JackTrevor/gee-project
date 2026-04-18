@@ -60,11 +60,24 @@ async function assertAdmin() {
   return sessionUser;
 }
 
+async function assertCleaner() {
+  const sessionUser = await assertAuthenticated();
+
+  if (sessionUser.role !== "cleaner" || !sessionUser.cleanerId) {
+    throw new Error("Cleaner access is required.");
+  }
+
+  return sessionUser;
+}
+
 function revalidateAppPaths() {
   revalidatePath("/");
   revalidatePath("/invoices");
   revalidatePath("/jobs");
+  revalidatePath("/my-jobs");
   revalidatePath("/payments");
+  revalidatePath("/reports");
+  revalidatePath("/reviews");
   revalidatePath("/users");
 }
 
@@ -335,9 +348,14 @@ export async function createUserAccount(formData: FormData) {
   const email = cleanText(formData.get("email")).toLowerCase();
   const password = cleanText(formData.get("password"));
   const role = cleanText(formData.get("role")) || "staff";
+  const cleanerId = cleanText(formData.get("cleanerId"));
 
   if (!name || !email || password.length < 8) {
     throw new Error("Name, email, and an 8+ character password are required.");
+  }
+
+  if (role === "cleaner" && !cleanerId) {
+    throw new Error("Cleaner users must be linked to a cleaner record.");
   }
 
   const existingUser = await User.findOne({ email }).lean();
@@ -345,11 +363,20 @@ export async function createUserAccount(formData: FormData) {
     throw new Error("A user with that email already exists.");
   }
 
+  if (cleanerId) {
+    const linkedCleanerUser = await User.findOne({ cleanerId }).lean();
+    if (linkedCleanerUser) {
+      throw new Error("That cleaner already has a linked login account.");
+    }
+  }
+
   await User.create({
     name,
     email,
     passwordHash: hashPassword(password),
-    role: role === "admin" ? "admin" : "staff",
+    cleanerId: cleanerId || undefined,
+    role:
+      role === "admin" ? "admin" : role === "cleaner" ? "cleaner" : "staff",
     active: true,
   });
 
@@ -408,4 +435,89 @@ export async function createInvoice(formData: FormData) {
 
   revalidateAppPaths();
   redirect(`/invoices/${invoice._id.toString()}`);
+}
+
+export async function requestJobCompletion(formData: FormData) {
+  const sessionUser = await assertCleaner();
+  await connectToDatabase();
+
+  const jobId = cleanText(formData.get("jobId"));
+  const requestNote = cleanOptionalText(formData.get("requestNote"));
+
+  if (!jobId) {
+    throw new Error("Job id is required.");
+  }
+
+  const job = await Job.findOne({
+    _id: jobId,
+    cleanerId: sessionUser.cleanerId,
+    jobStatus: { $ne: "completed" },
+  }).lean();
+
+  if (!job) {
+    throw new Error("That job is not available for completion request.");
+  }
+
+  await Job.findByIdAndUpdate(jobId, {
+    completionReviewStatus: "requested",
+    completionRequestedAt: new Date(),
+    completionRequestedByUserId: sessionUser.userId,
+    completionRequestNote: requestNote,
+    completionReviewedAt: undefined,
+    completionReviewedByUserId: undefined,
+    completionReviewNote: undefined,
+  });
+
+  revalidateAppPaths();
+}
+
+export async function approveJobCompletion(formData: FormData) {
+  const sessionUser = await assertAdmin();
+  await connectToDatabase();
+
+  const jobId = cleanText(formData.get("jobId"));
+  const reviewNote = cleanOptionalText(formData.get("reviewNote"));
+
+  if (!jobId) {
+    throw new Error("Job id is required.");
+  }
+
+  await Job.findOneAndUpdate(
+    { _id: jobId, completionReviewStatus: "requested" },
+    {
+      jobStatus: "completed",
+      completionReviewStatus: "approved",
+      completionReviewedAt: new Date(),
+      completionReviewedByUserId: sessionUser.userId,
+      completionReviewNote: reviewNote,
+    },
+    { runValidators: true },
+  );
+
+  revalidateAppPaths();
+}
+
+export async function rejectJobCompletion(formData: FormData) {
+  const sessionUser = await assertAdmin();
+  await connectToDatabase();
+
+  const jobId = cleanText(formData.get("jobId"));
+  const reviewNote = cleanOptionalText(formData.get("reviewNote"));
+
+  if (!jobId) {
+    throw new Error("Job id is required.");
+  }
+
+  await Job.findOneAndUpdate(
+    { _id: jobId, completionReviewStatus: "requested" },
+    {
+      completionReviewStatus: "rejected",
+      completionReviewedAt: new Date(),
+      completionReviewedByUserId: sessionUser.userId,
+      completionReviewNote: reviewNote,
+    },
+    { runValidators: true },
+  );
+
+  revalidateAppPaths();
 }

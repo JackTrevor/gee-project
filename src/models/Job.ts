@@ -14,6 +14,17 @@ const jobSchema = new Schema(
       enum: ["scheduled", "completed", "cancelled"],
       default: "scheduled",
     },
+    completionReviewStatus: {
+      type: String,
+      enum: ["none", "requested", "approved", "rejected"],
+      default: "none",
+    },
+    completionRequestedAt: { type: Date },
+    completionRequestedByUserId: { type: Schema.Types.ObjectId, ref: "User" },
+    completionRequestNote: { type: String, trim: true },
+    completionReviewedAt: { type: Date },
+    completionReviewedByUserId: { type: Schema.Types.ObjectId, ref: "User" },
+    completionReviewNote: { type: String, trim: true },
     clientPaymentStatus: {
       type: String,
       enum: ["pending", "invoiced", "paid"],

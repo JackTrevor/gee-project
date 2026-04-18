@@ -6,6 +6,7 @@ import { createUserAccount } from "@/app/actions";
 import { LogoutButton } from "@/components/logout-button";
 import { getSessionCookieName, getSessionUser } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
+import { Cleaner } from "@/models/Cleaner";
 import { User } from "@/models/User";
 
 async function getUsersPageData() {
@@ -18,7 +19,10 @@ async function getUsersPageData() {
     redirect("/jobs");
   }
 
-  const users = await User.find().sort({ role: 1, name: 1 }).lean();
+  const [users, cleaners] = await Promise.all([
+    User.find().sort({ role: 1, name: 1 }).lean(),
+    Cleaner.find().sort({ name: 1 }).lean(),
+  ]);
 
   return {
     sessionUser,
@@ -28,12 +32,18 @@ async function getUsersPageData() {
       email: user.email,
       role: user.role,
       active: user.active,
+      cleanerId: user.cleanerId?.toString(),
+    })),
+    cleaners: cleaners.map((cleaner) => ({
+      _id: cleaner._id.toString(),
+      name: cleaner.name,
+      active: cleaner.active,
     })),
   };
 }
 
 export default async function UsersPage() {
-  const { sessionUser, users } = await getUsersPageData();
+  const { sessionUser, users, cleaners } = await getUsersPageData();
 
   return (
     <main className="min-h-screen px-4 py-6 text-foreground sm:px-6 lg:px-10">
@@ -69,6 +79,12 @@ export default async function UsersPage() {
                   className="rounded-full border border-border bg-white/70 px-4 py-2 text-ink-soft transition hover:bg-white"
                 >
                   Jobs
+                </Link>
+                <Link
+                  href="/reviews"
+                  className="rounded-full border border-border bg-white/70 px-4 py-2 text-ink-soft transition hover:bg-white"
+                >
+                  Review queue
                 </Link>
               </div>
             </div>
@@ -112,6 +128,21 @@ export default async function UsersPage() {
               >
                 <option value="staff">Staff</option>
                 <option value="admin">Admin</option>
+                <option value="cleaner">Cleaner login</option>
+              </select>
+              <select
+                name="cleanerId"
+                defaultValue=""
+                className="w-full rounded-2xl border border-border bg-white/80 px-4 py-3 outline-none transition focus:border-accent"
+              >
+                <option value="">No linked cleaner</option>
+                {cleaners
+                  .filter((cleaner) => cleaner.active)
+                  .map((cleaner) => (
+                    <option key={cleaner._id} value={cleaner._id}>
+                      {cleaner.name}
+                    </option>
+                  ))}
               </select>
               <button className="w-full rounded-full bg-accent px-5 py-3 text-sm font-semibold text-white transition hover:bg-accent-strong">
                 Create user
@@ -136,6 +167,9 @@ export default async function UsersPage() {
                     <div>
                       <p className="font-semibold text-ink-soft">{user.name}</p>
                       <p className="text-sm text-muted">{user.email}</p>
+                      {user.cleanerId ? (
+                        <p className="text-sm text-muted">Linked cleaner account</p>
+                      ) : null}
                     </div>
                     <div className="flex flex-wrap gap-2 text-sm">
                       <span className="rounded-full bg-[rgba(201,111,59,0.12)] px-3 py-1 text-accent-strong">

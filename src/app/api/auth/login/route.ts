@@ -26,10 +26,10 @@ export async function POST(request: Request) {
     return NextResponse.redirect(loginUrl, 303);
   }
 
-  const response = NextResponse.redirect(
-    new URL(nextPath.startsWith("/") ? nextPath : "/jobs", request.url),
-    303,
-  );
+  const requestedPath = nextPath.startsWith("/") ? nextPath : "/jobs";
+  const safeNextPath = user.role === "cleaner" ? "/my-jobs" : requestedPath;
+
+  const response = NextResponse.redirect(new URL(safeNextPath, request.url), 303);
 
   response.cookies.set({
     name: getSessionCookieName(),
@@ -38,6 +38,7 @@ export async function POST(request: Request) {
       email: user.email,
       name: user.name,
       role: user.role,
+      cleanerId: user.cleanerId?.toString(),
     }),
     httpOnly: true,
     sameSite: "lax",
