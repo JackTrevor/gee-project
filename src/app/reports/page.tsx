@@ -1,13 +1,32 @@
 import Link from "next/link";
 
 import { LogoutButton } from "@/components/logout-button";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatDateForInput } from "@/lib/format";
 import { connectToDatabase } from "@/lib/mongodb";
 import { getReportsData } from "@/lib/reports";
 
-async function getReportsPageData() {
+type ReportsPageProps = {
+  searchParams: Promise<{
+    from?: string;
+    to?: string;
+  }>;
+};
+
+function parseDateInput(value?: string) {
+  if (!value) {
+    return undefined;
+  }
+
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed;
+}
+
+async function getReportsPageData(searchParams: Awaited<ReportsPageProps["searchParams"]>) {
   await connectToDatabase();
-  return getReportsData();
+  return getReportsData({
+    from: parseDateInput(searchParams.from),
+    to: parseDateInput(searchParams.to),
+  });
 }
 
 function StatusPill({ label, value }: { label: string; value: number }) {
@@ -21,9 +40,11 @@ function StatusPill({ label, value }: { label: string; value: number }) {
   );
 }
 
-export default async function ReportsPage() {
+export default async function ReportsPage({ searchParams }: ReportsPageProps) {
+  const params = await searchParams;
   const {
     totals,
+    dateRange,
     counts,
     monthly,
     maxMonthlyRevenue,
@@ -32,7 +53,7 @@ export default async function ReportsPage() {
     receivables,
     payables,
     statusMix,
-  } = await getReportsPageData();
+  } = await getReportsPageData(params);
 
   return (
     <main className="min-h-screen px-4 py-6 text-foreground sm:px-6 lg:px-10">
@@ -54,6 +75,9 @@ export default async function ReportsPage() {
                   This page turns your live MongoDB data into the first true reporting layer
                   for Gee Project. It gives you a monthly business view, top performers, and
                   the open balances still waiting to be collected or paid.
+                </p>
+                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">
+                  Showing {formatDateForInput(dateRange.from)} to {formatDateForInput(dateRange.to)}
                 </p>
               </div>
 
@@ -84,6 +108,30 @@ export default async function ReportsPage() {
                 </Link>
               </div>
             </div>
+
+            <form className="grid gap-3 rounded-[28px] border border-border bg-white/60 p-4 md:grid-cols-[1fr_1fr_auto_auto]">
+              <input
+                name="from"
+                type="date"
+                defaultValue={formatDateForInput(dateRange.from)}
+                className="w-full rounded-2xl border border-border bg-white/90 px-4 py-3 outline-none transition focus:border-accent"
+              />
+              <input
+                name="to"
+                type="date"
+                defaultValue={formatDateForInput(dateRange.to)}
+                className="w-full rounded-2xl border border-border bg-white/90 px-4 py-3 outline-none transition focus:border-accent"
+              />
+              <button className="rounded-full bg-accent px-5 py-3 text-sm font-semibold text-white transition hover:bg-accent-strong">
+                Apply filters
+              </button>
+              <Link
+                href="/reports"
+                className="rounded-full border border-border bg-white px-5 py-3 text-center text-sm font-semibold text-ink-soft transition hover:bg-[rgba(255,255,255,0.75)]"
+              >
+                Reset
+              </Link>
+            </form>
 
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
               {[
@@ -162,6 +210,7 @@ export default async function ReportsPage() {
               <StatusPill label="Clients" value={counts.clients} />
               <StatusPill label="Cleaners" value={counts.cleaners} />
               <StatusPill label="Jobs" value={counts.jobs} />
+              <StatusPill label="All jobs on file" value={counts.allJobs} />
               <StatusPill
                 label="Scheduled jobs"
                 value={statusMix.jobStatuses.scheduled ?? 0}

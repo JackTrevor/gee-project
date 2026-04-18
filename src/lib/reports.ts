@@ -33,16 +33,51 @@ function getMonthLabel(date: Date) {
   }).format(date);
 }
 
-export async function getReportsData() {
-  const dashboardData = await getDashboardData();
-  const { jobs, totals, clients, cleaners } = dashboardData;
+function startOfMonth(date: Date) {
+  const next = new Date(date);
+  next.setDate(1);
+  next.setHours(0, 0, 0, 0);
+  return next;
+}
 
-  const monthDates = Array.from({ length: 6 }, (_, index) => {
-    const date = new Date();
-    date.setDate(1);
-    date.setMonth(date.getMonth() - (5 - index));
-    return date;
+function buildMonthDates(from: Date, to: Date) {
+  const monthDates: Date[] = [];
+  const cursor = startOfMonth(from);
+  const end = startOfMonth(to);
+
+  while (cursor <= end) {
+    monthDates.push(new Date(cursor));
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
+
+  return monthDates;
+}
+
+export type ReportsDateRange = {
+  from?: Date;
+  to?: Date;
+};
+
+export async function getReportsData(range?: ReportsDateRange) {
+  const dashboardData = await getDashboardData();
+  const { jobs, clients, cleaners } = dashboardData;
+
+  const to = range?.to ? new Date(range.to) : new Date();
+  to.setHours(23, 59, 59, 999);
+
+  const from = range?.from ? new Date(range.from) : new Date(to);
+  if (!range?.from) {
+    from.setMonth(from.getMonth() - 5);
+    from.setDate(1);
+  }
+  from.setHours(0, 0, 0, 0);
+
+  const filteredJobs = jobs.filter((job) => {
+    const cleaningDate = new Date(job.cleaningDate);
+    return cleaningDate >= from && cleaningDate <= to;
   });
+
+  const monthDates = buildMonthDates(from, to);
 
   const monthlyMap = monthDates.reduce<Map<string, MonthlyMetric>>((map, date) => {
     map.set(getMonthKey(date), {
@@ -61,7 +96,7 @@ export async function getReportsData() {
   const receivablesMap = new Map<string, BalanceItem>();
   const payablesMap = new Map<string, BalanceItem>();
 
-  const statusMix = jobs.reduce(
+  const statusMix = filteredJobs.reduce(
     (mix, job) => {
       mix.jobStatuses[job.jobStatus] = (mix.jobStatuses[job.jobStatus] ?? 0) + 1;
       mix.clientPaymentStatuses[job.clientPaymentStatus] =
@@ -77,7 +112,32 @@ export async function getReportsData() {
     },
   );
 
-  for (const job of jobs) {
+  const filteredTotals = filteredJobs.reduce(
+    (accumulator, job) => {
+      accumulator.revenue += job.amountCharged;
+      accumulator.payouts += job.cleanerPayout;
+      accumulator.profit += job.amountCharged - job.cleanerPayout;
+
+      if (job.clientPaymentStatus !== "paid") {
+        accumulator.outstandingClientBalance += job.amountCharged;
+      }
+
+      if (job.cleanerPaymentStatus !== "paid") {
+        accumulator.outstandingCleanerBalance += job.cleanerPayout;
+      }
+
+      return accumulator;
+    },
+    {
+      revenue: 0,
+      payouts: 0,
+      profit: 0,
+      outstandingClientBalance: 0,
+      outstandingCleanerBalance: 0,
+    },
+  );
+
+  for (const job of filteredJobs) {
     const cleaningDate = new Date(job.cleaningDate);
     const monthBucket = monthlyMap.get(getMonthKey(cleaningDate));
     if (monthBucket) {
@@ -140,11 +200,16 @@ export async function getReportsData() {
   const maxMonthlyRevenue = Math.max(...monthly.map((month) => month.revenue), 1);
 
   return {
-    totals,
+    totals: filteredTotals,
+    dateRange: {
+      from,
+      to,
+    },
     counts: {
       clients: clients.length,
       cleaners: cleaners.length,
-      jobs: jobs.length,
+      jobs: filteredJobs.length,
+      allJobs: jobs.length,
     },
     monthly,
     maxMonthlyRevenue,
