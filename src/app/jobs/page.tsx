@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 import {
   createCleaner,
   createClient,
@@ -12,6 +10,7 @@ import {
   updateJob,
 } from "@/app/actions";
 import { LogoutButton } from "@/components/logout-button";
+import { WorkspaceNav } from "@/components/workspace-nav";
 import { getDashboardData } from "@/lib/dashboard";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { connectToDatabase } from "@/lib/mongodb";
@@ -64,6 +63,7 @@ export default async function JobsPage() {
   return (
     <main className="min-h-screen px-4 py-6 text-foreground sm:px-6 lg:px-10">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
+        <WorkspaceNav currentPath="/jobs" />
         <section className="card-shadow overflow-hidden rounded-[32px] border border-border bg-surface text-foreground backdrop-blur">
           <div className="flex flex-col gap-6 px-6 py-8 lg:px-10 lg:py-10">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -85,38 +85,6 @@ export default async function JobsPage() {
                 </p>
               </div>
 
-              <div className="flex flex-wrap gap-3 text-sm">
-                <Link
-                  href="/"
-                  className="rounded-full border border-border bg-white/70 px-4 py-2 text-ink-soft transition hover:bg-white"
-                >
-                  Back to overview
-                </Link>
-                <Link
-                  href="/payments"
-                  className="rounded-full border border-border bg-white/70 px-4 py-2 text-ink-soft transition hover:bg-white"
-                >
-                  Open payments
-                </Link>
-                <Link
-                  href="/invoices"
-                  className="rounded-full border border-border bg-white/70 px-4 py-2 text-ink-soft transition hover:bg-white"
-                >
-                  Open invoices
-                </Link>
-                <Link
-                  href="/reports"
-                  className="rounded-full border border-border bg-white/70 px-4 py-2 text-ink-soft transition hover:bg-white"
-                >
-                  Open reports
-                </Link>
-                <Link
-                  href="/reviews"
-                  className="rounded-full border border-border bg-white/70 px-4 py-2 text-ink-soft transition hover:bg-white"
-                >
-                  Review queue
-                </Link>
-              </div>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">

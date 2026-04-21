@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { LogoutButton } from "@/components/logout-button";
+import { WorkspaceNav } from "@/components/workspace-nav";
 import { formatCurrency, formatDateForInput } from "@/lib/format";
 import { connectToDatabase } from "@/lib/mongodb";
 import { getReportsData } from "@/lib/reports";
@@ -58,6 +59,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   return (
     <main className="min-h-screen px-4 py-6 text-foreground sm:px-6 lg:px-10">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
+        <WorkspaceNav currentPath="/reports" />
         <section className="card-shadow overflow-hidden rounded-[32px] border border-border bg-surface text-foreground backdrop-blur">
           <div className="flex flex-col gap-6 px-6 py-8 lg:px-10 lg:py-10">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -82,30 +84,6 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
               </div>
 
               <div className="flex flex-wrap gap-3 text-sm">
-                <Link
-                  href="/"
-                  className="rounded-full border border-border bg-white/70 px-4 py-2 text-ink-soft transition hover:bg-white"
-                >
-                  Overview
-                </Link>
-                <Link
-                  href="/jobs"
-                  className="rounded-full border border-border bg-white/70 px-4 py-2 text-ink-soft transition hover:bg-white"
-                >
-                  Jobs
-                </Link>
-                <Link
-                  href="/payments"
-                  className="rounded-full border border-border bg-white/70 px-4 py-2 text-ink-soft transition hover:bg-white"
-                >
-                  Payments
-                </Link>
-                <Link
-                  href="/invoices"
-                  className="rounded-full border border-border bg-white/70 px-4 py-2 text-ink-soft transition hover:bg-white"
-                >
-                  Invoices
-                </Link>
                 <Link
                   href={`/api/reports/export/csv?from=${formatDateForInput(dateRange.from)}&to=${formatDateForInput(dateRange.to)}`}
                   className="rounded-full border border-border bg-white/70 px-4 py-2 text-ink-soft transition hover:bg-white"
