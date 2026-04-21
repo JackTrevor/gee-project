@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { createUserAccount } from "@/app/actions";
+import { createUserAccount, startImpersonation } from "@/app/actions";
 import { LogoutButton } from "@/components/logout-button";
 import { WorkspaceNav } from "@/components/workspace-nav";
 import { getSessionCookieName, getSessionUser } from "@/lib/auth";
@@ -33,6 +33,7 @@ async function getUsersPageData() {
       role: user.role,
       active: user.active,
       cleanerId: user.cleanerId?.toString(),
+      isCurrentUser: user._id.toString() === sessionUser.userId,
     })),
     cleaners: cleaners.map((cleaner) => ({
       _id: cleaner._id.toString(),
@@ -64,7 +65,8 @@ export default async function UsersPage() {
                 </h1>
                 <p className="max-w-3xl text-base leading-7 text-muted sm:text-lg">
                   Signed in as {sessionUser.name}. This page is reserved for admins,
-                  and it lets you create staff or additional admin accounts for the workspace.
+                  and it lets you create staff or cleaner accounts, plus impersonate them
+                  safely when you need to troubleshoot what they see.
                 </p>
               </div>
 
@@ -152,13 +154,21 @@ export default async function UsersPage() {
                         <p className="text-sm text-muted">Linked cleaner account</p>
                       ) : null}
                     </div>
-                    <div className="flex flex-wrap gap-2 text-sm">
+                    <div className="flex flex-wrap items-center justify-end gap-2 text-sm">
                       <span className="rounded-full bg-[rgba(201,111,59,0.12)] px-3 py-1 text-accent-strong">
                         {user.role}
                       </span>
                       <span className="rounded-full bg-[rgba(34,94,67,0.10)] px-3 py-1 text-[#215940]">
                         {user.active ? "active" : "inactive"}
                       </span>
+                      {user.active && user.role !== "admin" && !user.isCurrentUser ? (
+                        <form action={startImpersonation}>
+                          <input type="hidden" name="userId" value={user._id} />
+                          <button className="rounded-full border border-[rgba(20,82,56,0.18)] bg-[rgba(31,122,82,0.10)] px-3 py-1 font-medium text-[#145238] transition hover:bg-[rgba(31,122,82,0.16)]">
+                            Impersonate
+                          </button>
+                        </form>
+                      ) : null}
                     </div>
                   </div>
                 </div>

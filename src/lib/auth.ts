@@ -1,11 +1,18 @@
 export type UserRole = "admin" | "staff" | "cleaner";
 
+export type ImpersonationContext = {
+  adminUserId: string;
+  adminName: string;
+  adminEmail: string;
+};
+
 export type SessionUser = {
   userId: string;
   email: string;
   name: string;
   role: UserRole;
   cleanerId?: string;
+  impersonation?: ImpersonationContext;
 };
 
 type SessionPayload = SessionUser & {
@@ -126,6 +133,7 @@ export async function getSessionUser(token?: string | null) {
     name: payload.name,
     role: payload.role,
     cleanerId: payload.cleanerId,
+    impersonation: payload.impersonation,
   };
 }
 

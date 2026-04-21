@@ -4,7 +4,13 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { getSessionCookieName, getSessionUser, verifySessionToken } from "@/lib/auth";
+import {
+  createSessionToken,
+  getSessionCookieName,
+  getSessionDurationMs,
+  getSessionUser,
+  verifySessionToken,
+} from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { hashPassword } from "@/lib/passwords";
 import { CleanerPayment } from "@/models/CleanerPayment";
@@ -79,6 +85,19 @@ function revalidateAppPaths() {
   revalidatePath("/reports");
   revalidatePath("/reviews");
   revalidatePath("/users");
+}
+
+async function replaceSessionCookie(value: string) {
+  const cookieStore = await cookies();
+  cookieStore.set({
+    name: getSessionCookieName(),
+    value,
+    httpOnly: true,
+    sameSite: "lax",
+    secure: true,
+    path: "/",
+    maxAge: Math.floor(getSessionDurationMs() / 1000),
+  });
 }
 
 export async function createClient(formData: FormData) {
@@ -381,6 +400,72 @@ export async function createUserAccount(formData: FormData) {
   });
 
   revalidateAppPaths();
+}
+
+export async function startImpersonation(formData: FormData) {
+  const sessionUser = await assertAdmin();
+  await connectToDatabase();
+
+  const targetUserId = cleanText(formData.get("userId"));
+  if (!targetUserId) {
+    throw new Error("User id is required.");
+  }
+
+  const targetUser = await User.findById(targetUserId).lean();
+  if (!targetUser || !targetUser.active) {
+    throw new Error("That user is not available for impersonation.");
+  }
+
+  if (targetUser.role === "admin") {
+    throw new Error("Admin accounts cannot be impersonated.");
+  }
+
+  if (targetUser._id.toString() === sessionUser.userId) {
+    throw new Error("You are already signed into that account.");
+  }
+
+  await replaceSessionCookie(
+    await createSessionToken({
+      userId: targetUser._id.toString(),
+      email: targetUser.email,
+      name: targetUser.name,
+      role: targetUser.role,
+      cleanerId: targetUser.cleanerId?.toString(),
+      impersonation: {
+        adminUserId: sessionUser.userId,
+        adminName: sessionUser.name,
+        adminEmail: sessionUser.email,
+      },
+    }),
+  );
+
+  redirect(targetUser.role === "cleaner" ? "/my-jobs" : "/jobs");
+}
+
+export async function stopImpersonation() {
+  const sessionUser = await assertAuthenticated();
+  await connectToDatabase();
+
+  if (!sessionUser.impersonation) {
+    throw new Error("No impersonation session is active.");
+  }
+
+  const adminUser = await User.findById(sessionUser.impersonation.adminUserId).lean();
+  if (!adminUser || !adminUser.active || adminUser.role !== "admin") {
+    throw new Error("The original admin account is no longer available.");
+  }
+
+  await replaceSessionCookie(
+    await createSessionToken({
+      userId: adminUser._id.toString(),
+      email: adminUser.email,
+      name: adminUser.name,
+      role: adminUser.role,
+      cleanerId: adminUser.cleanerId?.toString(),
+    }),
+  );
+
+  redirect("/users");
 }
 
 export async function createInvoice(formData: FormData) {
