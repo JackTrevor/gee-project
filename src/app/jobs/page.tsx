@@ -41,10 +41,105 @@ function Pill({ value }: { value: string }) {
   );
 }
 
+function JobStatusCard({
+  title,
+  subtitle,
+  value,
+  tone,
+}: {
+  title: string;
+  subtitle: string;
+  value: string;
+  tone: string;
+}) {
+  return (
+    <article className="rounded-[28px] border border-border bg-white/72 p-5">
+      <div className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${tone}`}>
+        {title}
+      </div>
+      <p className="mt-4 font-serif text-4xl text-ink-soft">{value}</p>
+      <p className="mt-2 text-sm leading-6 text-muted">{subtitle}</p>
+    </article>
+  );
+}
+
+function JobCard({
+  job,
+  emphasis,
+}: {
+  job: Awaited<ReturnType<typeof getJobsPageData>>["jobs"][number];
+  emphasis: "current" | "completed";
+}) {
+  const profit = job.amountCharged - job.cleanerPayout;
+
+  return (
+    <article
+      className={`rounded-[28px] border border-border p-5 ${
+        emphasis === "completed"
+          ? "bg-[linear-gradient(180deg,rgba(247,250,246,0.96),rgba(237,245,239,0.92))]"
+          : "bg-white/70"
+      }`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="font-serif text-2xl text-ink-soft">{job.apartmentName}</p>
+          <p className="mt-1 text-sm text-muted">{job.apartmentAddress || "No address yet"}</p>
+        </div>
+        <Pill value={job.jobStatus} />
+      </div>
+      <div className="mt-4 grid gap-3 text-sm text-ink-soft sm:grid-cols-2">
+        <div className="rounded-2xl bg-[rgba(255,255,255,0.55)] px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted">Client</p>
+          <p className="mt-2 font-semibold">
+            {job.clientId?.companyName || job.clientId?.name || "Unknown client"}
+          </p>
+        </div>
+        <div className="rounded-2xl bg-[rgba(255,255,255,0.55)] px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted">Cleaner</p>
+          <p className="mt-2 font-semibold">{job.cleanerId?.name || "Unknown cleaner"}</p>
+        </div>
+        <div className="rounded-2xl bg-[rgba(255,255,255,0.55)] px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted">Cleaning date</p>
+          <p className="mt-2 font-semibold">{formatDate(job.cleaningDate)}</p>
+        </div>
+        <div className="rounded-2xl bg-[rgba(255,255,255,0.55)] px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted">Profit</p>
+          <p className="mt-2 font-semibold">{formatCurrency(profit)}</p>
+        </div>
+      </div>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Pill value={job.clientPaymentStatus} />
+        <Pill value={job.cleanerPaymentStatus} />
+        {job.completionReviewStatus !== "none" ? <Pill value={job.completionReviewStatus} /> : null}
+      </div>
+      {job.notes ? (
+        <p className="mt-4 rounded-2xl bg-[rgba(255,255,255,0.55)] px-4 py-3 text-sm leading-6 text-muted">
+          {job.notes}
+        </p>
+      ) : null}
+    </article>
+  );
+}
+
 export default async function JobsPage() {
   const { clients, cleaners, jobs, totals } = await getJobsPageData();
 
   const canCreateJob = clients.length > 0 && cleaners.some((cleaner) => cleaner.active);
+  const scheduledJobs = jobs.filter((job) => job.jobStatus === "scheduled");
+  const completedJobs = jobs.filter((job) => job.jobStatus === "completed");
+  const cancelledJobs = jobs.filter((job) => job.jobStatus === "cancelled");
+  const reviewRequestedJobs = jobs.filter((job) => job.completionReviewStatus === "requested");
+  const unpaidCompletedJobs = completedJobs.filter(
+    (job) => job.clientPaymentStatus !== "paid" || job.cleanerPaymentStatus !== "paid",
+  );
+  const currentJobs = [...scheduledJobs].sort(
+    (left, right) => new Date(left.cleaningDate).getTime() - new Date(right.cleaningDate).getTime(),
+  );
+  const latestCompletedJobs = [...completedJobs]
+    .sort(
+      (left, right) => new Date(right.cleaningDate).getTime() - new Date(left.cleaningDate).getTime(),
+    )
+    .slice(0, 8);
   const clientJobCounts = jobs.reduce<Record<string, number>>((counts, job) => {
     const id = job.clientId?._id;
     if (id) {
@@ -75,13 +170,12 @@ export default async function JobsPage() {
                   <LogoutButton />
                 </div>
                 <h1 className="font-serif text-4xl leading-tight text-ink-soft sm:text-5xl">
-                  Jobs, clients, and cleaners in one working view.
+                  A clearer jobs dashboard for the day-to-day operation.
                 </h1>
                 <p className="max-w-3xl text-base leading-7 text-muted sm:text-lg">
-                  This is the first real workflow for Gee Project. Add your
-                  clients and cleaners, create apartment jobs, and start
-                  building the data we will later turn into invoices, reports,
-                  and QuickBooks sync.
+                  This workspace now acts more like a command center. You can
+                  see what is active, what is complete, and what still needs
+                  payment attention before jumping into editing records.
                 </p>
               </div>
 
@@ -90,12 +184,12 @@ export default async function JobsPage() {
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
               {[
                 { label: "Total jobs", value: jobs.length.toString() },
-                { label: "Revenue", value: formatCurrency(totals.revenue) },
-                { label: "Cleaner payouts", value: formatCurrency(totals.payouts) },
-                { label: "Profit", value: formatCurrency(totals.profit) },
+                { label: "Scheduled", value: scheduledJobs.length.toString() },
+                { label: "Completed", value: completedJobs.length.toString() },
+                { label: "Awaiting review", value: reviewRequestedJobs.length.toString() },
                 {
-                  label: "Outstanding client balance",
-                  value: formatCurrency(totals.outstandingClientBalance),
+                  label: "Cancelled",
+                  value: cancelledJobs.length.toString(),
                 },
               ].map((metric) => (
                 <article
@@ -114,15 +208,100 @@ export default async function JobsPage() {
           </div>
         </section>
 
+        <section className="grid gap-6 lg:grid-cols-2 xl:grid-cols-4">
+          <JobStatusCard
+            title="Live pipeline"
+            value={currentJobs.length.toString()}
+            subtitle="Jobs still active and moving through the schedule."
+            tone="bg-[rgba(54,94,129,0.10)] text-[#375d81]"
+          />
+          <JobStatusCard
+            title="Recently finished"
+            value={latestCompletedJobs.length.toString()}
+            subtitle="Most recent completed jobs ready for quick follow-up."
+            tone="bg-[rgba(34,94,67,0.10)] text-[#215940]"
+          />
+          <JobStatusCard
+            title="Unpaid completed"
+            value={unpaidCompletedJobs.length.toString()}
+            subtitle="Finished work that still needs client or cleaner settlement."
+            tone="bg-[rgba(201,111,59,0.12)] text-accent-strong"
+          />
+          <JobStatusCard
+            title="Profit tracked"
+            value={formatCurrency(totals.profit)}
+            subtitle="Gross profit across every job currently recorded."
+            tone="bg-[rgba(90,52,110,0.08)] text-[#5a346e]"
+          />
+        </section>
+
+        <section className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+          <article className="card-shadow rounded-[32px] border border-border bg-surface p-6 backdrop-blur">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm uppercase tracking-[0.18em] text-muted">
+                  Current pipeline
+                </p>
+                <h2 className="mt-2 font-serif text-3xl text-ink-soft">
+                  Active apartment jobs
+                </h2>
+              </div>
+              <div className="rounded-full bg-[rgba(54,94,129,0.10)] px-3 py-1 text-sm text-[#375d81]">
+                {currentJobs.length} active
+              </div>
+            </div>
+
+            {currentJobs.length === 0 ? (
+              <div className="mt-6 rounded-[24px] border border-dashed border-border bg-white/50 px-5 py-8 text-sm leading-7 text-muted">
+                No active jobs right now. New scheduled work will appear here first.
+              </div>
+            ) : (
+              <div className="mt-6 grid gap-4 lg:grid-cols-2">
+                {currentJobs.slice(0, 6).map((job) => (
+                  <JobCard key={job._id} job={job} emphasis="current" />
+                ))}
+              </div>
+            )}
+          </article>
+
+          <article className="card-shadow rounded-[32px] border border-border bg-surface p-6 backdrop-blur">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm uppercase tracking-[0.18em] text-muted">
+                  Completed jobs
+                </p>
+                <h2 className="mt-2 font-serif text-3xl text-ink-soft">
+                  Recently finished work
+                </h2>
+              </div>
+              <div className="rounded-full bg-[rgba(34,94,67,0.10)] px-3 py-1 text-sm text-[#215940]">
+                {completedJobs.length} complete
+              </div>
+            </div>
+
+            {latestCompletedJobs.length === 0 ? (
+              <div className="mt-6 rounded-[24px] border border-dashed border-border bg-white/50 px-5 py-8 text-sm leading-7 text-muted">
+                Completed jobs will collect here as soon as work starts being finished.
+              </div>
+            ) : (
+              <div className="mt-6 grid gap-4">
+                {latestCompletedJobs.map((job) => (
+                  <JobCard key={job._id} job={job} emphasis="completed" />
+                ))}
+              </div>
+            )}
+          </article>
+        </section>
+
         <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
           <article className="card-shadow rounded-[32px] border border-border bg-surface p-6 backdrop-blur">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-sm uppercase tracking-[0.18em] text-muted">
-                  Job board
+                  All job records
                 </p>
                 <h2 className="mt-2 font-serif text-3xl text-ink-soft">
-                  Current apartment jobs
+                  Edit and manage every apartment job
                 </h2>
               </div>
               <div className="rounded-full bg-[rgba(201,111,59,0.12)] px-3 py-1 text-sm text-accent-strong">
@@ -206,6 +385,9 @@ export default async function JobsPage() {
                             <div className="mt-2 flex flex-wrap gap-2">
                               <Pill value={job.clientPaymentStatus} />
                               <Pill value={job.cleanerPaymentStatus} />
+                              {job.completionReviewStatus !== "none" ? (
+                                <Pill value={job.completionReviewStatus} />
+                              ) : null}
                             </div>
                           </div>
                         </div>

@@ -32,6 +32,7 @@ export type JobView = {
   amountCharged: number;
   cleanerPayout: number;
   jobStatus: string;
+  completionReviewStatus: string;
   clientPaymentStatus: string;
   cleanerPaymentStatus: string;
   notes?: string;
@@ -81,6 +82,7 @@ export async function getDashboardData() {
     amountCharged: number;
     cleanerPayout: number;
     jobStatus: string;
+    completionReviewStatus?: string;
     clientPaymentStatus: string;
     cleanerPaymentStatus: string;
     notes?: string;
@@ -129,6 +131,7 @@ export async function getDashboardData() {
     amountCharged: job.amountCharged,
     cleanerPayout: job.cleanerPayout,
     jobStatus: job.jobStatus,
+    completionReviewStatus: job.completionReviewStatus ?? "none",
     clientPaymentStatus: job.clientPaymentStatus,
     cleanerPaymentStatus: job.cleanerPaymentStatus,
     notes: job.notes,
