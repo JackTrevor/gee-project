@@ -45,6 +45,50 @@ async function getUsersPageData() {
 
 export default async function UsersPage() {
   const { sessionUser, users, cleaners } = await getUsersPageData();
+  const activeUsers = users.filter((user) => user.active);
+  const inactiveUsers = users.filter((user) => !user.active);
+
+  function UserCard({
+    user,
+  }: {
+    user: (typeof users)[number];
+  }) {
+    return (
+      <div className="rounded-[24px] border border-border bg-white/70 px-4 py-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="font-semibold text-ink-soft">{user.name}</p>
+            <p className="text-sm text-muted">{user.email}</p>
+            {user.cleanerId ? (
+              <p className="text-sm text-muted">Linked cleaner account</p>
+            ) : null}
+          </div>
+          <div className="flex flex-wrap items-center justify-end gap-2 text-sm">
+            <span className="rounded-full bg-[rgba(201,111,59,0.12)] px-3 py-1 text-accent-strong">
+              {user.role}
+            </span>
+            <span
+              className={`rounded-full px-3 py-1 ${
+                user.active
+                  ? "bg-[rgba(34,94,67,0.10)] text-[#215940]"
+                  : "bg-[rgba(137,48,48,0.10)] text-[#8a2f2f]"
+              }`}
+            >
+              {user.active ? "active" : "inactive"}
+            </span>
+            {user.active && user.role !== "admin" && !user.isCurrentUser ? (
+              <form action={startImpersonation}>
+                <input type="hidden" name="userId" value={user._id} />
+                <button className="rounded-full border border-[rgba(20,82,56,0.18)] bg-[rgba(31,122,82,0.10)] px-3 py-1 font-medium text-[#145238] transition hover:bg-[rgba(31,122,82,0.16)]">
+                  Impersonate
+                </button>
+              </form>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <main className="min-h-screen px-4 py-6 text-foreground sm:px-6 lg:px-10">
@@ -74,7 +118,7 @@ export default async function UsersPage() {
           </div>
         </section>
 
-        <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+	        <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
           <article className="card-shadow rounded-[32px] border border-border bg-surface p-6 backdrop-blur">
             <p className="text-sm uppercase tracking-[0.18em] text-muted">
               Add user
@@ -133,49 +177,86 @@ export default async function UsersPage() {
             </form>
           </article>
 
-          <article className="card-shadow rounded-[32px] border border-border bg-surface p-6 backdrop-blur">
-            <p className="text-sm uppercase tracking-[0.18em] text-muted">
-              Current users
+	          <article className="card-shadow rounded-[32px] border border-border bg-surface p-6 backdrop-blur">
+	            <p className="text-sm uppercase tracking-[0.18em] text-muted">
+	              Current users
             </p>
-            <h2 className="mt-2 font-serif text-3xl text-ink-soft">
-              Workspace access
-            </h2>
-            <div className="mt-6 space-y-3">
-              {users.map((user) => (
-                <div
-                  key={user._id}
-                  className="rounded-[24px] border border-border bg-white/70 px-4 py-4"
-                >
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="font-semibold text-ink-soft">{user.name}</p>
-                      <p className="text-sm text-muted">{user.email}</p>
-                      {user.cleanerId ? (
-                        <p className="text-sm text-muted">Linked cleaner account</p>
-                      ) : null}
-                    </div>
-                    <div className="flex flex-wrap items-center justify-end gap-2 text-sm">
-                      <span className="rounded-full bg-[rgba(201,111,59,0.12)] px-3 py-1 text-accent-strong">
-                        {user.role}
-                      </span>
-                      <span className="rounded-full bg-[rgba(34,94,67,0.10)] px-3 py-1 text-[#215940]">
-                        {user.active ? "active" : "inactive"}
-                      </span>
-                      {user.active && user.role !== "admin" && !user.isCurrentUser ? (
-                        <form action={startImpersonation}>
-                          <input type="hidden" name="userId" value={user._id} />
-                          <button className="rounded-full border border-[rgba(20,82,56,0.18)] bg-[rgba(31,122,82,0.10)] px-3 py-1 font-medium text-[#145238] transition hover:bg-[rgba(31,122,82,0.16)]">
-                            Impersonate
-                          </button>
-                        </form>
-                      ) : null}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </article>
-        </section>
+	            <h2 className="mt-2 font-serif text-3xl text-ink-soft">
+	              Workspace access
+	            </h2>
+	            <div className="mt-6 grid gap-4 md:grid-cols-2">
+	              <div className="rounded-[24px] border border-border bg-[rgba(31,122,82,0.08)] px-4 py-4">
+	                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#145238]">
+	                  Active users
+	                </p>
+	                <p className="mt-2 font-serif text-4xl text-ink-soft">{activeUsers.length}</p>
+	                <p className="mt-1 text-sm text-muted">
+	                  Accounts that can currently sign in and work in the app.
+	                </p>
+	              </div>
+	              <div className="rounded-[24px] border border-border bg-[rgba(137,48,48,0.08)] px-4 py-4">
+	                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#8a2f2f]">
+	                  Inactive users
+	                </p>
+	                <p className="mt-2 font-serif text-4xl text-ink-soft">{inactiveUsers.length}</p>
+	                <p className="mt-1 text-sm text-muted">
+	                  Accounts that are stored here but should not currently be used.
+	                </p>
+	              </div>
+	            </div>
+	            <div className="mt-6 space-y-6">
+	              <section>
+	                <div className="flex items-center justify-between gap-4">
+	                  <div>
+	                    <p className="text-sm uppercase tracking-[0.18em] text-muted">
+	                      Active
+	                    </p>
+	                    <h3 className="mt-1 font-serif text-2xl text-ink-soft">
+	                      Users currently in service
+	                    </h3>
+	                  </div>
+	                  <div className="rounded-full bg-[rgba(31,122,82,0.10)] px-3 py-1 text-sm text-[#145238]">
+	                    {activeUsers.length} active
+	                  </div>
+	                </div>
+	                <div className="mt-4 space-y-3">
+	                  {activeUsers.length === 0 ? (
+	                    <div className="rounded-[24px] border border-dashed border-border bg-white/60 px-4 py-5 text-sm text-muted">
+	                      No active users yet.
+	                    </div>
+	                  ) : (
+	                    activeUsers.map((user) => <UserCard key={user._id} user={user} />)
+	                  )}
+	                </div>
+	              </section>
+
+	              <section>
+	                <div className="flex items-center justify-between gap-4">
+	                  <div>
+	                    <p className="text-sm uppercase tracking-[0.18em] text-muted">
+	                      Inactive
+	                    </p>
+	                    <h3 className="mt-1 font-serif text-2xl text-ink-soft">
+	                      Archived or disabled accounts
+	                    </h3>
+	                  </div>
+	                  <div className="rounded-full bg-[rgba(137,48,48,0.10)] px-3 py-1 text-sm text-[#8a2f2f]">
+	                    {inactiveUsers.length} inactive
+	                  </div>
+	                </div>
+	                <div className="mt-4 space-y-3">
+	                  {inactiveUsers.length === 0 ? (
+	                    <div className="rounded-[24px] border border-dashed border-border bg-white/60 px-4 py-5 text-sm text-muted">
+	                      No inactive users right now.
+	                    </div>
+	                  ) : (
+	                    inactiveUsers.map((user) => <UserCard key={user._id} user={user} />)
+	                  )}
+	                </div>
+	              </section>
+	            </div>
+	          </article>
+	        </section>
       </div>
     </main>
   );
