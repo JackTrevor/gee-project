@@ -205,8 +205,8 @@ export default async function CleanerPaymentDetailPage({ params }: PaymentPagePr
   const payeeLines = getPayeeLines(payment);
 
   return (
-    <main className="min-h-screen bg-[linear-gradient(180deg,#f3f7f2_0%,#e7f0e8_100%)] px-4 py-6 text-foreground sm:px-6 lg:px-10">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
+    <main className="min-h-screen bg-[linear-gradient(180deg,#f3f7f2_0%,#e7f0e8_100%)] px-4 py-6 text-foreground sm:px-6 lg:px-10 print:bg-white print:px-0 print:py-0">
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 print-sheet-a3 print:max-w-none print:gap-0">
         <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
           <div className="inline-flex items-center rounded-full border border-[rgba(20,82,56,0.14)] bg-[rgba(255,255,255,0.74)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-accent-strong">
             Printable check
@@ -222,8 +222,8 @@ export default async function CleanerPaymentDetailPage({ params }: PaymentPagePr
           </div>
         </div>
 
-        <section className="card-shadow rounded-[32px] border border-border bg-white/88 p-5 print:rounded-none print:border-0 print:bg-white print:p-0 print:shadow-none">
-          <div className="space-y-4 print:space-y-3">
+        <section className="card-shadow rounded-[32px] border border-border bg-white/88 p-5 print:rounded-none print:border-0 print:bg-white print:p-3 print:shadow-none">
+          <div className="space-y-4 print:space-y-2">
             <div className="print:hidden">
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-muted">
                 First alignment draft

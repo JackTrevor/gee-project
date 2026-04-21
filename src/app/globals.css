@@ -59,3 +59,22 @@ a {
     0 1px 1px rgba(18, 49, 37, 0.04),
     0 18px 48px rgba(18, 49, 37, 0.08);
 }
+
+@media print {
+  @page {
+    size: A3 portrait;
+    margin: 8mm;
+  }
+
+  html,
+  body {
+    background: #ffffff;
+  }
+
+  .print-sheet-a3 {
+    width: 277mm;
+    max-width: 277mm;
+    min-height: 396mm;
+    margin: 0 auto;
+  }
+}
