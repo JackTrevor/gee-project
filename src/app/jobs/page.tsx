@@ -21,12 +21,15 @@ async function getJobsPageData() {
 }
 
 const statusClassNames: Record<string, string> = {
-  scheduled: "bg-[rgba(54,94,129,0.10)] text-[#375d81]",
-  completed: "bg-[rgba(34,94,67,0.10)] text-[#215940]",
+  scheduled: "bg-[rgba(31,122,82,0.10)] text-[#1f7a52]",
+  completed: "bg-[rgba(20,82,56,0.12)] text-[#145238]",
   cancelled: "bg-[rgba(137,48,48,0.10)] text-[#8a2f2f]",
-  pending: "bg-[rgba(201,111,59,0.12)] text-accent-strong",
-  invoiced: "bg-[rgba(90,52,110,0.08)] text-[#5a346e]",
-  paid: "bg-[rgba(34,94,67,0.10)] text-[#215940]",
+  pending: "bg-[rgba(213,155,61,0.14)] text-[#8b5a12]",
+  invoiced: "bg-[rgba(31,122,82,0.10)] text-[#145238]",
+  paid: "bg-[rgba(20,82,56,0.12)] text-[#145238]",
+  requested: "bg-[rgba(213,155,61,0.14)] text-[#8b5a12]",
+  approved: "bg-[rgba(20,82,56,0.12)] text-[#145238]",
+  rejected: "bg-[rgba(137,48,48,0.10)] text-[#8a2f2f]",
 };
 
 function Pill({ value }: { value: string }) {
@@ -76,8 +79,8 @@ function JobCard({
     <article
       className={`rounded-[28px] border border-border p-5 ${
         emphasis === "completed"
-          ? "bg-[linear-gradient(180deg,rgba(247,250,246,0.96),rgba(237,245,239,0.92))]"
-          : "bg-white/70"
+          ? "bg-[linear-gradient(180deg,rgba(243,250,245,0.98),rgba(231,244,236,0.96))]"
+          : "bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(244,249,245,0.92))]"
       }`}
     >
       <div className="flex items-start justify-between gap-3">
@@ -88,21 +91,21 @@ function JobCard({
         <Pill value={job.jobStatus} />
       </div>
       <div className="mt-4 grid gap-3 text-sm text-ink-soft sm:grid-cols-2">
-        <div className="rounded-2xl bg-[rgba(255,255,255,0.55)] px-4 py-3">
+        <div className="rounded-2xl bg-[rgba(255,255,255,0.72)] px-4 py-3">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted">Client</p>
           <p className="mt-2 font-semibold">
             {job.clientId?.companyName || job.clientId?.name || "Unknown client"}
           </p>
         </div>
-        <div className="rounded-2xl bg-[rgba(255,255,255,0.55)] px-4 py-3">
+        <div className="rounded-2xl bg-[rgba(255,255,255,0.72)] px-4 py-3">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted">Cleaner</p>
           <p className="mt-2 font-semibold">{job.cleanerId?.name || "Unknown cleaner"}</p>
         </div>
-        <div className="rounded-2xl bg-[rgba(255,255,255,0.55)] px-4 py-3">
+        <div className="rounded-2xl bg-[rgba(255,255,255,0.72)] px-4 py-3">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted">Cleaning date</p>
           <p className="mt-2 font-semibold">{formatDate(job.cleaningDate)}</p>
         </div>
-        <div className="rounded-2xl bg-[rgba(255,255,255,0.55)] px-4 py-3">
+        <div className="rounded-2xl bg-[rgba(255,255,255,0.72)] px-4 py-3">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted">Profit</p>
           <p className="mt-2 font-semibold">{formatCurrency(profit)}</p>
         </div>
@@ -113,7 +116,7 @@ function JobCard({
         {job.completionReviewStatus !== "none" ? <Pill value={job.completionReviewStatus} /> : null}
       </div>
       {job.notes ? (
-        <p className="mt-4 rounded-2xl bg-[rgba(255,255,255,0.55)] px-4 py-3 text-sm leading-6 text-muted">
+        <p className="mt-4 rounded-2xl bg-[rgba(255,255,255,0.72)] px-4 py-3 text-sm leading-6 text-muted">
           {job.notes}
         </p>
       ) : null}
@@ -159,12 +162,12 @@ export default async function JobsPage() {
     <main className="min-h-screen px-4 py-6 text-foreground sm:px-6 lg:px-10">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
         <WorkspaceNav currentPath="/jobs" />
-        <section className="card-shadow overflow-hidden rounded-[32px] border border-border bg-surface text-foreground backdrop-blur">
+        <section className="card-shadow overflow-hidden rounded-[32px] border border-border bg-[linear-gradient(135deg,rgba(250,255,251,0.92),rgba(237,246,239,0.92))] text-foreground backdrop-blur">
           <div className="flex flex-col gap-6 px-6 py-8 lg:px-10 lg:py-10">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="inline-flex items-center rounded-full border border-[rgba(94,82,64,0.18)] bg-[rgba(255,255,255,0.55)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-accent-strong">
+                  <div className="inline-flex items-center rounded-full border border-[rgba(20,82,56,0.14)] bg-[rgba(255,255,255,0.72)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-accent-strong">
                     Operations workspace
                   </div>
                   <LogoutButton />
@@ -194,7 +197,7 @@ export default async function JobsPage() {
               ].map((metric) => (
                 <article
                   key={metric.label}
-                  className="rounded-[26px] border border-border bg-white/70 p-5"
+                  className="rounded-[26px] border border-border bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(245,249,246,0.9))] p-5"
                 >
                   <p className="text-sm uppercase tracking-[0.18em] text-muted">
                     {metric.label}
@@ -213,25 +216,25 @@ export default async function JobsPage() {
             title="Live pipeline"
             value={currentJobs.length.toString()}
             subtitle="Jobs still active and moving through the schedule."
-            tone="bg-[rgba(54,94,129,0.10)] text-[#375d81]"
+            tone="bg-[rgba(31,122,82,0.12)] text-[#1f7a52]"
           />
           <JobStatusCard
             title="Recently finished"
             value={latestCompletedJobs.length.toString()}
             subtitle="Most recent completed jobs ready for quick follow-up."
-            tone="bg-[rgba(34,94,67,0.10)] text-[#215940]"
+            tone="bg-[rgba(20,82,56,0.12)] text-[#145238]"
           />
           <JobStatusCard
             title="Unpaid completed"
             value={unpaidCompletedJobs.length.toString()}
             subtitle="Finished work that still needs client or cleaner settlement."
-            tone="bg-[rgba(201,111,59,0.12)] text-accent-strong"
+            tone="bg-[rgba(213,155,61,0.14)] text-[#8b5a12]"
           />
           <JobStatusCard
             title="Profit tracked"
             value={formatCurrency(totals.profit)}
             subtitle="Gross profit across every job currently recorded."
-            tone="bg-[rgba(90,52,110,0.08)] text-[#5a346e]"
+            tone="bg-[rgba(31,122,82,0.10)] text-[#145238]"
           />
         </section>
 
@@ -246,7 +249,7 @@ export default async function JobsPage() {
                   Active apartment jobs
                 </h2>
               </div>
-              <div className="rounded-full bg-[rgba(54,94,129,0.10)] px-3 py-1 text-sm text-[#375d81]">
+              <div className="rounded-full bg-[rgba(31,122,82,0.12)] px-3 py-1 text-sm text-[#1f7a52]">
                 {currentJobs.length} active
               </div>
             </div>
@@ -274,7 +277,7 @@ export default async function JobsPage() {
                   Recently finished work
                 </h2>
               </div>
-              <div className="rounded-full bg-[rgba(34,94,67,0.10)] px-3 py-1 text-sm text-[#215940]">
+              <div className="rounded-full bg-[rgba(20,82,56,0.12)] px-3 py-1 text-sm text-[#145238]">
                 {completedJobs.length} complete
               </div>
             </div>
@@ -304,7 +307,7 @@ export default async function JobsPage() {
                   Edit and manage every apartment job
                 </h2>
               </div>
-              <div className="rounded-full bg-[rgba(201,111,59,0.12)] px-3 py-1 text-sm text-accent-strong">
+              <div className="rounded-full bg-[rgba(31,122,82,0.12)] px-3 py-1 text-sm text-[#1f7a52]">
                 {jobs.length} recorded
               </div>
             </div>

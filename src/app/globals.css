@@ -1,15 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f7f1e8;
-  --foreground: #1f2937;
-  --surface: rgba(255, 250, 244, 0.82);
-  --surface-strong: #fffaf4;
-  --muted: #6b7280;
-  --border: rgba(94, 82, 64, 0.16);
-  --accent: #c96f3b;
-  --accent-strong: #8a4423;
-  --ink-soft: #433833;
+  --background: #f3f7f2;
+  --foreground: #163126;
+  --surface: rgba(255, 255, 255, 0.82);
+  --surface-strong: #ffffff;
+  --muted: #68776f;
+  --border: rgba(28, 78, 54, 0.12);
+  --accent: #1f7a52;
+  --accent-strong: #145238;
+  --ink-soft: #143326;
 }
 
 @theme inline {
@@ -22,8 +22,8 @@
   --color-accent: var(--accent);
   --color-accent-strong: var(--accent-strong);
   --color-ink-soft: var(--ink-soft);
-  --font-sans: "Trebuchet MS", "Segoe UI", sans-serif;
-  --font-serif: Georgia, "Times New Roman", serif;
+  --font-sans: "Aptos", "Segoe UI", sans-serif;
+  --font-serif: "Iowan Old Style", Georgia, "Times New Roman", serif;
   --font-mono: Consolas, "Courier New", monospace;
 }
 
@@ -33,9 +33,10 @@
 
 html {
   background:
-    radial-gradient(circle at top left, rgba(201, 111, 59, 0.18), transparent 32%),
-    radial-gradient(circle at top right, rgba(55, 93, 129, 0.14), transparent 28%),
-    linear-gradient(180deg, #fbf7f0 0%, #f1e8db 100%);
+    radial-gradient(circle at top left, rgba(46, 138, 94, 0.17), transparent 28%),
+    radial-gradient(circle at top right, rgba(19, 82, 56, 0.14), transparent 24%),
+    radial-gradient(circle at bottom right, rgba(130, 198, 161, 0.18), transparent 22%),
+    linear-gradient(180deg, #f8fcf7 0%, #edf5ee 100%);
 }
 
 body {
@@ -50,11 +51,11 @@ a {
 }
 
 ::selection {
-  background: rgba(201, 111, 59, 0.22);
+  background: rgba(31, 122, 82, 0.22);
 }
 
 .card-shadow {
   box-shadow:
-    0 1px 1px rgba(36, 30, 24, 0.04),
-    0 14px 40px rgba(36, 30, 24, 0.08);
+    0 1px 1px rgba(18, 49, 37, 0.04),
+    0 18px 48px rgba(18, 49, 37, 0.08);
 }

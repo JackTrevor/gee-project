@@ -56,7 +56,7 @@ export async function WorkspaceNav({ currentPath }: WorkspaceNavProps) {
         : STAFF_ITEMS;
 
   return (
-    <nav className="rounded-[28px] border border-border bg-white/60 p-3 backdrop-blur">
+    <nav className="rounded-[28px] border border-border bg-[linear-gradient(180deg,rgba(255,255,255,0.82),rgba(245,250,246,0.92))] p-3 backdrop-blur">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">
@@ -78,8 +78,8 @@ export async function WorkspaceNav({ currentPath }: WorkspaceNavProps) {
                 href={item.href}
                 className={`rounded-full px-4 py-2 text-sm font-medium transition ${
                   active
-                    ? "bg-accent text-white"
-                    : "border border-border bg-white/80 text-ink-soft hover:bg-white"
+                    ? "bg-[linear-gradient(135deg,#1f7a52_0%,#145238_100%)] text-white shadow-[0_10px_24px_rgba(20,82,56,0.22)]"
+                    : "border border-border bg-white/85 text-ink-soft hover:bg-white"
                 }`}
               >
                 {item.label}
