@@ -197,7 +197,7 @@ export async function updateClient(formData: FormData) {
 }
 
 export async function deleteClient(formData: FormData) {
-  await assertAuthenticated();
+  await assertAdmin();
   await connectToDatabase();
 
   const id = cleanText(formData.get("id"));
@@ -241,7 +241,7 @@ export async function updateCleaner(formData: FormData) {
 }
 
 export async function deleteCleaner(formData: FormData) {
-  await assertAuthenticated();
+  await assertAdmin();
   await connectToDatabase();
 
   const id = cleanText(formData.get("id"));
@@ -294,7 +294,7 @@ export async function updateJob(formData: FormData) {
 }
 
 export async function deleteJob(formData: FormData) {
-  await assertAuthenticated();
+  await assertAdmin();
   await connectToDatabase();
 
   const id = cleanText(formData.get("id"));

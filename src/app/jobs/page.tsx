@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import {
   createCleaner,
   createClient,
@@ -11,13 +12,20 @@ import {
 } from "@/app/actions";
 import { LogoutButton } from "@/components/logout-button";
 import { WorkspaceNav } from "@/components/workspace-nav";
+import { getSessionCookieName, getSessionUser } from "@/lib/auth";
 import { getDashboardData } from "@/lib/dashboard";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { connectToDatabase } from "@/lib/mongodb";
 
 async function getJobsPageData() {
   await connectToDatabase();
-  return getDashboardData();
+  const cookieStore = await cookies();
+  const sessionUser = await getSessionUser(cookieStore.get(getSessionCookieName())?.value);
+
+  return {
+    sessionUser,
+    ...(await getDashboardData()),
+  };
 }
 
 const statusClassNames: Record<string, string> = {
@@ -125,7 +133,8 @@ function JobCard({
 }
 
 export default async function JobsPage() {
-  const { clients, cleaners, jobs, totals } = await getJobsPageData();
+  const { clients, cleaners, jobs, totals, sessionUser } = await getJobsPageData();
+  const isAdmin = sessionUser?.role === "admin";
 
   const canCreateJob = clients.length > 0 && cleaners.some((cleaner) => cleaner.active);
   const scheduledJobs = jobs.filter((job) => job.jobStatus === "scheduled");
@@ -522,12 +531,14 @@ export default async function JobsPage() {
                               </button>
                             </div>
                           </form>
-                          <form action={deleteJob} className="mt-3">
-                            <input type="hidden" name="id" value={job._id} />
-                            <button className="rounded-full border border-[rgba(137,48,48,0.22)] bg-[rgba(137,48,48,0.10)] px-5 py-3 text-sm font-semibold text-[#8a2f2f] transition hover:bg-[rgba(137,48,48,0.16)]">
-                              Delete job
-                            </button>
-                          </form>
+                          {isAdmin ? (
+                            <form action={deleteJob} className="mt-3">
+                              <input type="hidden" name="id" value={job._id} />
+                              <button className="rounded-full border border-[rgba(137,48,48,0.22)] bg-[rgba(137,48,48,0.10)] px-5 py-3 text-sm font-semibold text-[#8a2f2f] transition hover:bg-[rgba(137,48,48,0.16)]">
+                                Delete job
+                              </button>
+                            </form>
+                          ) : null}
                         </div>
                       </details>
                     </article>
@@ -653,12 +664,14 @@ export default async function JobsPage() {
                             </button>
                           </form>
                           {linkedJobs === 0 ? (
-                            <form action={deleteClient} className="mt-3">
-                              <input type="hidden" name="id" value={client._id} />
-                              <button className="rounded-full border border-[rgba(137,48,48,0.22)] bg-[rgba(137,48,48,0.10)] px-5 py-3 text-sm font-semibold text-[#8a2f2f] transition hover:bg-[rgba(137,48,48,0.16)]">
-                                Delete client
-                              </button>
-                            </form>
+                            isAdmin ? (
+                              <form action={deleteClient} className="mt-3">
+                                <input type="hidden" name="id" value={client._id} />
+                                <button className="rounded-full border border-[rgba(137,48,48,0.22)] bg-[rgba(137,48,48,0.10)] px-5 py-3 text-sm font-semibold text-[#8a2f2f] transition hover:bg-[rgba(137,48,48,0.16)]">
+                                  Delete client
+                                </button>
+                              </form>
+                            ) : null
                           ) : (
                             <p className="mt-3 text-sm text-muted">
                               Remove or reassign linked jobs before deleting this client.
@@ -784,12 +797,14 @@ export default async function JobsPage() {
                             </button>
                           </form>
                           {linkedJobs === 0 ? (
-                            <form action={deleteCleaner} className="mt-3">
-                              <input type="hidden" name="id" value={cleaner._id} />
-                              <button className="rounded-full border border-[rgba(137,48,48,0.22)] bg-[rgba(137,48,48,0.10)] px-5 py-3 text-sm font-semibold text-[#8a2f2f] transition hover:bg-[rgba(137,48,48,0.16)]">
-                                Delete cleaner
-                              </button>
-                            </form>
+                            isAdmin ? (
+                              <form action={deleteCleaner} className="mt-3">
+                                <input type="hidden" name="id" value={cleaner._id} />
+                                <button className="rounded-full border border-[rgba(137,48,48,0.22)] bg-[rgba(137,48,48,0.10)] px-5 py-3 text-sm font-semibold text-[#8a2f2f] transition hover:bg-[rgba(137,48,48,0.16)]">
+                                  Delete cleaner
+                                </button>
+                              </form>
+                            ) : null
                           ) : (
                             <p className="mt-3 text-sm text-muted">
                               Remove or reassign linked jobs before deleting this cleaner.
