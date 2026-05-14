@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { PrintButton } from "@/components/print-button";
-import { formatCurrency, formatDateForInput } from "@/lib/format";
 import { connectToDatabase } from "@/lib/mongodb";
 import { getCleanerPaymentById } from "@/lib/payments";
 
@@ -12,21 +11,31 @@ type PaymentPageProps = {
   }>;
 };
 
-const COMPANY_NAME = "Gee Project Cleaning";
-const COMPANY_ADDRESS_LINES = ["131 Village Center Blvd", "Unit 3312", "Myrtle Beach, SC 29579"];
-const BANK_LABEL = "Wells Fargo";
-const BANK_CITY = "Conway, South Carolina 29526";
+const COMPANY_NAME = "LG Flooring Corporation";
+const COMPANY_ADDRESS_LINES = [
+  "131 Village Center Boulevard",
+  "Myrtle Beach SC 29579",
+];
+const BANK_LABEL = "WELLS FARGO BANK";
 
 function formatCheckDate(value: string | Date) {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  }).format(new Date(value));
+}
+
+function formatCompactDate(value: string | Date) {
   const date = new Date(value);
   return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
 }
 
 function formatNumericAmount(value: number) {
-  return value.toLocaleString("en-US", {
+  return `**${value.toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  });
+  })}`;
 }
 
 function numberToWordsUnderThousand(value: number): string {
@@ -99,7 +108,7 @@ function numberToWords(value: number): string {
 function formatAmountInWords(value: number) {
   const dollars = Math.floor(value);
   const cents = Math.round((value - dollars) * 100);
-  return `${numberToWords(dollars)} and ${cents.toString().padStart(2, "0")}/100 Dollars`;
+  return `${numberToWords(dollars)} and ${cents.toString().padStart(2, "0")}/100*****`;
 }
 
 function getPayeeLines(payment: NonNullable<Awaited<ReturnType<typeof getCleanerPaymentById>>>) {
@@ -116,79 +125,91 @@ function getPayeeLines(payment: NonNullable<Awaited<ReturnType<typeof getCleaner
   return lines.slice(0, 3);
 }
 
+function MicrLine({ checkNumber }: { checkNumber: string }) {
+  const firstChunk = `"${checkNumber.slice(-8)}"`;
+  const secondChunk = '":053207766:"';
+  const thirdChunk = '6328813263"';
+
+  return (
+    <div className="mt-4 flex items-center justify-center border-t border-[rgba(0,0,0,0.18)] pt-3 font-mono text-[18px] tracking-[0.12em] text-[#202020]">
+      <span>{firstChunk}</span>
+      <span className="ml-4">{secondChunk}</span>
+      <span className="ml-4">{thirdChunk}</span>
+    </div>
+  );
+}
+
 function CheckFace({
-  checkNumber,
-  paymentDate,
-  totalAmount,
+  payment,
   payeeLines,
-  memo,
-  copyLabel,
 }: {
-  checkNumber: string;
-  paymentDate: string | Date;
-  totalAmount: number;
+  payment: NonNullable<Awaited<ReturnType<typeof getCleanerPaymentById>>>;
   payeeLines: string[];
-  memo?: string;
-  copyLabel?: string;
 }) {
   return (
-    <section className="rounded-[16px] border border-[rgba(20,82,56,0.24)] bg-[linear-gradient(180deg,rgba(235,245,239,0.82),rgba(226,240,231,0.78))] px-5 py-4 text-[11px] text-[#143326]">
-      <div className="grid grid-cols-[1.45fr_0.9fr_0.7fr] items-start gap-4">
+    <section className="rounded-[10px] border border-[rgba(0,0,0,0.28)] bg-white px-7 py-6 text-black">
+      <div className="grid grid-cols-[1.35fr_1fr_0.8fr] items-start gap-4">
         <div>
-          <p className="text-[18px] font-semibold leading-none">{COMPANY_NAME}</p>
+          <p className="font-mono text-[18px] font-semibold uppercase tracking-[0.04em]">
+            {COMPANY_NAME}
+          </p>
           {COMPANY_ADDRESS_LINES.map((line) => (
-            <p key={line} className="mt-0.5 leading-tight">
+            <p key={line} className="mt-1 font-mono text-[14px] font-semibold leading-tight text-[#454545]">
               {line}
             </p>
           ))}
         </div>
-        <div className="pt-1 text-center">
-          <p className="font-semibold">{BANK_LABEL}</p>
-          <p className="mt-0.5 text-[10px]">{BANK_CITY}</p>
+        <div className="pt-1 text-center font-mono text-[18px] font-semibold tracking-[0.08em]">
+          {BANK_LABEL}
         </div>
         <div className="text-right">
-          <p className="text-[22px] font-semibold leading-none">{checkNumber}</p>
-          <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.12em]">Date</p>
-          <p className="mt-0.5">{formatCheckDate(paymentDate)}</p>
+          <p className="font-mono text-[18px] font-semibold tracking-[0.08em]">
+            {payment.checkNumber.padStart(8, "0")}
+          </p>
         </div>
       </div>
 
-      <div className="mt-5 grid grid-cols-[auto_1fr_auto] items-center gap-3">
-        <p className="font-semibold uppercase tracking-[0.14em]">Pay</p>
-        <div className="border-b border-[rgba(20,82,56,0.35)] pb-1 text-[13px]">
-          {formatAmountInWords(totalAmount)}
-        </div>
-        <div className="min-w-[120px] text-right">
-          <p className="text-[10px] uppercase tracking-[0.12em]">$</p>
-          <p className="text-[22px] font-semibold leading-none">{formatNumericAmount(totalAmount)}</p>
-        </div>
+      <div className="mt-8 flex items-center justify-end gap-3">
+        <span className="font-mono text-[18px] font-semibold tracking-[0.08em]">DATE:</span>
+        <span className="font-sans text-[18px] text-[#3d3d3d]">{formatCheckDate(payment.paymentDate)}</span>
       </div>
 
-      <div className="mt-5 grid grid-cols-[56px_1fr] gap-3">
-        <div className="space-y-1 pt-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-[#4b6257]">
-          <p>To the</p>
-          <p>order</p>
-          <p>of</p>
+      <div className="mt-10 grid grid-cols-[110px_1fr_250px] items-start gap-5">
+        <div className="space-y-10 pt-1 font-mono text-[18px] font-semibold">
+          <p>Amount :</p>
+          <p>Pay To :</p>
         </div>
-        <div className="space-y-1 border-b border-[rgba(20,82,56,0.35)] pb-3 text-[13px]">
-          {payeeLines.map((line) => (
-            <p key={line}>{line}</p>
-          ))}
-        </div>
-      </div>
-
-      <div className="mt-6 grid grid-cols-[1fr_0.7fr] items-end gap-4">
-        <div className="text-[10px] tracking-[0.22em] text-[#4b6257]">
-          #00163* 05320778636328813263*
-        </div>
-        <div className="space-y-1">
-          <div className="border-b border-[rgba(20,82,56,0.35)]" />
-          <div className="flex items-center justify-between text-[10px]">
-            <span>{memo || "Cleaning payout"}</span>
-            {copyLabel ? <span className="text-[18px] font-semibold tracking-[0.12em]">{copyLabel}</span> : null}
+        <div>
+          <p className="font-sans text-[18px] text-[#111]">{formatAmountInWords(payment.totalAmount)}</p>
+          <div className="mt-8 space-y-1 font-mono text-[18px] font-semibold tracking-[0.02em] text-[#4a4a4a]">
+            {payeeLines.map((line) => (
+              <p key={line}>{line}</p>
+            ))}
           </div>
         </div>
+        <div className="pt-8 text-right">
+          <p className="font-mono text-[28px] font-semibold tracking-[0.08em]">
+            $ {formatNumericAmount(payment.totalAmount)}
+          </p>
+        </div>
       </div>
+
+      <div className="mt-10 grid grid-cols-[1fr_270px] items-end gap-10">
+        <div>
+          <p className="font-mono text-[16px] font-semibold tracking-[0.06em] text-[#5a5a5a]">
+            MEMO :
+          </p>
+          <p className="mt-2 min-h-[22px] text-[14px] text-[#444]">{payment.memo || ""}</p>
+        </div>
+        <div>
+          <div className="h-[58px] border-[4px] border-[#1b1b1b]" />
+          <p className="mt-1 text-center font-mono text-[12px] font-semibold uppercase tracking-[0.08em] text-[#7a7a7a]">
+            Authorized Signature
+          </p>
+        </div>
+      </div>
+
+      <MicrLine checkNumber={payment.checkNumber.padStart(8, "0")} />
     </section>
   );
 }
@@ -205,11 +226,11 @@ export default async function CleanerPaymentDetailPage({ params }: PaymentPagePr
   const payeeLines = getPayeeLines(payment);
 
   return (
-    <main className="min-h-screen bg-[linear-gradient(180deg,#f3f7f2_0%,#e7f0e8_100%)] px-4 py-6 text-foreground sm:px-6 lg:px-10 print:bg-white print:px-0 print:py-0">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 print-sheet-a3 print:max-w-none print:gap-0">
+    <main className="min-h-screen bg-[linear-gradient(180deg,#f3f7f2_0%,#e7f0e8_100%)] px-4 py-6 text-foreground print:bg-white print:px-0 print:py-0">
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 print-sheet-a4-checks print:max-w-none print:gap-0">
         <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
           <div className="inline-flex items-center rounded-full border border-[rgba(20,82,56,0.14)] bg-[rgba(255,255,255,0.74)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-accent-strong">
-            Printable check
+            Printable checks
           </div>
           <div className="flex flex-wrap gap-3">
             <Link
@@ -222,107 +243,25 @@ export default async function CleanerPaymentDetailPage({ params }: PaymentPagePr
           </div>
         </div>
 
-        <section className="card-shadow rounded-[32px] border border-border bg-white/88 p-5 print:rounded-none print:border-0 print:bg-white print:p-3 print:shadow-none">
+        <section className="card-shadow rounded-[24px] border border-border bg-white/92 p-4 print:rounded-none print:border-0 print:bg-white print:p-0 print:shadow-none">
           <div className="space-y-4 print:space-y-2">
             <div className="print:hidden">
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-muted">
-                First alignment draft
+                A4 three-check layout
               </p>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
-                This version follows the same overall structure as your sample:
-                top live check, middle stub, and lower copy. After Gee reviews it,
-                we can tighten the field positions for your real check stock.
+                This page now prints as three stacked checks on one A4 sheet. The numbering flow has been moved to numeric checks starting at 500.
+              </p>
+              <p className="mt-1 text-sm text-muted">
+                Payment date stored in Gee Project: {formatCompactDate(payment.paymentDate)}
               </p>
             </div>
 
-            <CheckFace
-              checkNumber={payment.checkNumber}
-              paymentDate={payment.paymentDate}
-              totalAmount={payment.totalAmount}
-              payeeLines={payeeLines}
-              memo={payment.memo}
-            />
-
-            <section className="rounded-[16px] border border-[rgba(20,82,56,0.24)] bg-white px-5 py-4 text-[11px] text-[#143326]">
-              <div className="flex items-start justify-between gap-4 border-b border-[rgba(20,82,56,0.22)] pb-2">
-                <div>
-                  <p className="text-[18px] font-semibold leading-none">{COMPANY_NAME}</p>
-                  <p className="mt-1 text-[10px] uppercase tracking-[0.14em] text-[#4b6257]">
-                    Name
-                  </p>
-                  <p className="mt-0.5 text-[12px]">{payment.cleaner?.name || "Unknown cleaner"}</p>
-                </div>
-                <div className="grid grid-cols-[auto_auto] gap-x-4 gap-y-1 text-right">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#4b6257]">
-                    Check Date
-                  </p>
-                  <p>{formatCheckDate(payment.paymentDate)}</p>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#4b6257]">
-                    Amount
-                  </p>
-                  <p>{formatNumericAmount(payment.totalAmount)}</p>
-                </div>
+            {[0, 1, 2].map((copyIndex) => (
+              <div key={copyIndex} className="pb-2 print:pb-0">
+                <CheckFace payment={payment} payeeLines={payeeLines} />
               </div>
-
-              <div className="mt-3 min-h-[220px] rounded-[12px] border border-[rgba(20,82,56,0.18)] px-4 py-3">
-                <div className="grid gap-3 md:grid-cols-3">
-                  <div className="rounded-xl bg-[rgba(243,248,244,0.92)] px-3 py-2">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#4b6257]">
-                      Check no.
-                    </p>
-                    <p className="mt-1 text-[12px]">{payment.checkNumber}</p>
-                  </div>
-                  <div className="rounded-xl bg-[rgba(243,248,244,0.92)] px-3 py-2">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#4b6257]">
-                      Memo
-                    </p>
-                    <p className="mt-1 text-[12px]">{payment.memo || "Cleaning payout"}</p>
-                  </div>
-                  <div className="rounded-xl bg-[rgba(243,248,244,0.92)] px-3 py-2">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#4b6257]">
-                      Total
-                    </p>
-                    <p className="mt-1 text-[12px]">{formatCurrency(payment.totalAmount)}</p>
-                  </div>
-                </div>
-
-                <div className="mt-4 overflow-hidden rounded-[12px] border border-[rgba(20,82,56,0.18)]">
-                  <div className="grid grid-cols-[1.5fr_0.9fr_0.8fr] gap-4 bg-[rgba(31,122,82,0.08)] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#4b6257]">
-                    <span>Apartment</span>
-                    <span>Cleaning date</span>
-                    <span>Payout</span>
-                  </div>
-                  {payment.jobs.map((job) => (
-                    <div
-                      key={job._id}
-                      className="grid grid-cols-[1.5fr_0.9fr_0.8fr] gap-4 border-t border-[rgba(20,82,56,0.12)] px-3 py-3 text-[12px] first:border-t-0"
-                    >
-                      <div>
-                        <p className="font-semibold">{job.apartmentName}</p>
-                        <p className="text-[10px] text-[#68776f]">{job.apartmentAddress || "No address yet"}</p>
-                      </div>
-                      <div>{formatDateForInput(job.cleaningDate)}</div>
-                      <div>{formatCurrency(job.cleanerPayout)}</div>
-                    </div>
-                  ))}
-                </div>
-
-                {payment.notes ? (
-                  <div className="mt-4 rounded-xl bg-[rgba(243,248,244,0.92)] px-3 py-3 text-[12px] leading-6 text-[#68776f]">
-                    {payment.notes}
-                  </div>
-                ) : null}
-              </div>
-            </section>
-
-            <CheckFace
-              checkNumber={payment.checkNumber}
-              paymentDate={payment.paymentDate}
-              totalAmount={payment.totalAmount}
-              payeeLines={payeeLines}
-              memo={payment.memo}
-              copyLabel="COPY"
-            />
+            ))}
           </div>
         </section>
       </div>

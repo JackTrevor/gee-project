@@ -12,12 +12,22 @@ async function getPaymentsWorkspaceData() {
   return getPaymentsPageData();
 }
 
+function getSuggestedCheckNumber(checkNumbers: string[], offset = 0) {
+  const numericValues = checkNumbers
+    .map((value) => Number(value.replace(/\D/g, "")))
+    .filter((value) => !Number.isNaN(value));
+
+  const base = numericValues.length === 0 ? 499 : Math.max(499, ...numericValues);
+  return String(base + offset + 1).padStart(8, "0");
+}
+
 export default async function PaymentsPage() {
   const { paymentCandidates, payments } = await getPaymentsWorkspaceData();
   const totalPendingPayouts = paymentCandidates.reduce(
     (sum, candidate) => sum + candidate.totalDue,
     0,
   );
+  const usedCheckNumbers = payments.map((payment) => payment.checkNumber);
 
   return (
     <main className="min-h-screen px-4 py-6 text-foreground sm:px-6 lg:px-10">
@@ -127,7 +137,7 @@ export default async function PaymentsPage() {
                       <div className="grid gap-3 md:grid-cols-3">
                         <input
                           name="checkNumber"
-                          defaultValue={`CHK-${String(payments.length + index + 1).padStart(4, "0")}`}
+                          defaultValue={getSuggestedCheckNumber(usedCheckNumbers, index)}
                           placeholder="Check number"
                           className="w-full rounded-2xl border border-border bg-white/80 px-4 py-3 outline-none transition focus:border-accent"
                           required
